@@ -36,6 +36,7 @@ update_compile_order -fileset sources_1
 set_property SOURCE_SET sources_1 [get_filesets sim_1]
 
 add_files -fileset sim_1 -norecurse ../tb/Processor_TB.sv
+#add_files -fileset sim_1 -norecurse ../tb/controller_TB.sv
 
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1
