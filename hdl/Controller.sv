@@ -66,6 +66,7 @@ module Controller(
     			sel_A <= 1;
     			sel_B <= 1;
     			rd_en <= 0;
+    			//rd_en <= 1;
     			wr_en <= 1;
     			wb_sel <= 1;
     			alu_op <= 0;

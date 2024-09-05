@@ -1,0 +1,37 @@
+# This snippet features a following assembly code : 
+
+#####################################################
+
+addi x3, x0, 9
+addi x4, x0, 0xa
+addi x5, x0, 0xac
+addi x1,x0,0xff
+
+sw x1,16(x0)
+
+sh x5,42(x0)
+sh x1,20(x0)
+
+sb x3, 17(x0)
+sb x4, 5(x0)
+
+lb x6,17(x0)
+lh x7,21(x0)
+lw x8,16(x0)
+
+#####################################################
+
+In case of testing this, just copy the hexa values down under.
+
+00900193
+00a00213
+0ac00293
+0ff00093
+00102823
+02501523
+00101a23        
+003008a3
+004002a3
+01100303
+01501383
+01002403

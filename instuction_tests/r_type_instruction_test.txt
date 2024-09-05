@@ -1,0 +1,34 @@
+# This snippet features a following assembly code : 
+
+#####################################################
+addi x2, x0, 0b1001
+addi x3, x0, 0b0101
+addi x31, x0 ,1
+
+
+add x4 x2,x3
+sub x5,x2,x3
+xor x6,x2,x3
+or x7,x2,x3
+and x8,x2,x3
+sll x9,x2,x31
+srl x10,x2,x31
+slt x11,x2,x3
+sltu x12,x3,x2 
+
+#####################################################
+
+In case of testing this, just copy the hexa values down under.
+
+00900113
+00500193
+00100f93
+00310233
+403102b3
+00314333
+003163b3
+00317433
+01f114b3
+01f15533
+003125b3
+0021b633

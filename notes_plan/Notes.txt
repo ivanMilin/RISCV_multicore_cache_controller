@@ -2,7 +2,7 @@ This file explains briefly what each component does and if its checked via simul
 
 1. PC (Program counter)
    - Increases by 4 to fetch the next instruction from file code.mem, or by some offset in case of jump instruction.
-   - This works via sim, try jump instruction
+   - This works via sim, jump instuction works, branch instruction works (blt specifically).
 
 2. Im (Instruction memory)
    - Memory that holds the set of instuctions to be executed, loaded from code.mem file. Use Ripes simulator to create
@@ -17,8 +17,7 @@ This file explains briefly what each component does and if its checked via simul
    - Block that extends our immidiate, depending on the type of instruction and its format.
 
 5. Bc (Branch controll) 
-   - Jump and branch controller, regular jump and branching options (beq,bneq,blt,bgt,sblt,sbgt -- check these names)
-   - Check if this works, not tested in sim
+   - Jump and branch controller, regular jump and branching options (beq,bne,blt,bge,bltu,bgeu)
 
 6. Controller 
    - Depending on a current instruction, set controll signals to required values (MUX sel siganls, enables and others..)
@@ -31,6 +30,7 @@ This file explains briefly what each component does and if its checked via simul
 8. Memory (Data memory)
    - Store data here, also depending on a type of instruciton.
    - Looks okay in sim, check how exactly does store work when it comes to sb and sh and offsets that are not dividable with 4.
+   - Load instruction works.
 
 9. Processor (Top file)
-   - Connects everything,
+   - Connects everything.
