@@ -1,0 +1,36 @@
+This file explains briefly what each component does and if its checked via simulation waveform.
+
+1. PC (Program counter)
+   - Increases by 4 to fetch the next instruction from file code.mem, or by some offset in case of jump instruction.
+   - This works via sim, try jump instruction
+
+2. Im (Instruction memory)
+   - Memory that holds the set of instuctions to be executed, loaded from code.mem file. Use Ripes simulator to create
+     those instructions.
+   - This works via sim.
+
+3. Rf (Register file)
+   - Register bank that holds 32 regs with width 32 (x0 - x31). We use these values for our operations. 
+   - This is checked, but debrief how does sh and sb work, sw looks fine and understandable.
+
+4. Ig (Immidiate generator)
+   - Block that extends our immidiate, depending on the type of instruction and its format.
+
+5. Bc (Branch controll) 
+   - Jump and branch controller, regular jump and branching options (beq,bneq,blt,bgt,sblt,sbgt -- check these names)
+   - Check if this works, not tested in sim
+
+6. Controller 
+   - Depending on a current instruction, set controll signals to required values (MUX sel siganls, enables and others..)
+   - This looks good in sim, but formal is the perfect place for checking this.
+
+7. ALU (Aritmethic logic unit) 
+   - Does out arithmetic operations.
+   - Looks okay in sim, also check in formal.
+
+8. Memory (Data memory)
+   - Store data here, also depending on a type of instruciton.
+   - Looks okay in sim, check how exactly does store work when it comes to sb and sh and offsets that are not dividable with 4.
+
+9. Processor (Top file)
+   - Connects everything,
