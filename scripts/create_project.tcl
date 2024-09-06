@@ -9,7 +9,7 @@ set resultDir ../vivado_project
 file mkdir $resultDir
 
 create_project RISCV_CPU $resultDir -part xc7z020clg400-1
-set_property board_part digilentinc.com:zybo-z7-10:part0:1.0 [current_project]
+set_property board_part digilentinc.com:zybo-z7-10:part0:1.2 [current_project]
 
 # ===================================================================================
 # Ukljucivanje svih izvornih i simulacionih fajlova u projekat
