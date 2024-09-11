@@ -1,0 +1,1 @@
+bind ImmediateGenerator checker_imm_gen chk_imm_gen(.*);

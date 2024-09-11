@@ -1,1 +1,1 @@
-bind BranchCondition_clk checker_branch chk_branch(.*);
+bind BranchCondition checker_branch chk_branch(.*);
