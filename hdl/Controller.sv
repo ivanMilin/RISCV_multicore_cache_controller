@@ -1,3 +1,4 @@
+
 module Controller(
 	input logic [31:0] instruction,
 	output logic [3:0] alu_op, 
