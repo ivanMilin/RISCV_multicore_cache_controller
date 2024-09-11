@@ -55,7 +55,6 @@ module BranchCondition(
 			br_taken <= 0;
 		else 
 			br_taken <= br_taken_next;
-	    end
 	end 	
 	
 	

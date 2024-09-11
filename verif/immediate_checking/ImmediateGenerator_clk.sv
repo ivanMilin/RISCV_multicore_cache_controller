@@ -39,7 +39,6 @@ module ImmediateGenerator(
 			imm_out <= 0;
 		else
 			imm_out <= imm_out_next;
-		end
 	end 
 	
 endmodule
