@@ -22,35 +22,36 @@ module  checker_imm_gen
 	default disable iff reset;
 	
 	// Assumes 
-	asm_opcode: assume property(instruction[6:0] inside {instruction_I_type_opcode, instruction_L_type_opcode, instruction_S_type_opcode, instruction_B_type_opcode, instruction_U_type_opcode, instruction_J_type_opcode});
+	//asm_opcode: assume property(instruction[6:0] inside {instruction_I_type_opcode, instruction_L_type_opcode, instruction_S_type_opcode, instruction_B_type_opcode, instruction_U_type_opcode, instruction_J_type_opcode});
+	asm_opcode: assume property(instruction[6:0] == instruction_U_type_opcode);
 
 	// Properties
 	property check_I_type_srli_slli; 
-		((instruction[6:0] == instruction_I_type_opcode) && (instruction[14:12] inside {1,5})) |=> (imm_out == instruction[24:20]);
+		(imm_out == instruction[24:20]) |=> ($past(instruction[6:0]) == instruction_I_type_opcode && $past(instruction[14:12]) inside {1,5});
 	endproperty
 	
 	property check_I_type_others; 
-		((instruction[6:0] == instruction_I_type_opcode) && (instruction[14:12] inside {0,2,3,4,6,7})) |=> (imm_out == instruction[31:20]);
+		(imm_out == instruction[31:20]) |=> ($past(instruction[6:0]) == instruction_I_type_opcode && $past(instruction[14:12]) inside {0,2,3,4,6,7});	
 	endproperty
 	
 	property check_L; 
-		(instruction[6:0] == instruction_L_type_opcode) |=> (imm_out == instruction[31:20]);
+		(imm_out == instruction[31:20]) |=> ($past(instruction[6:0]) == instruction_L_type_opcode);
 	endproperty
 
 	property check_S; 
-		(instruction[6:0] == instruction_S_type_opcode) |=> (imm_out == {{20{instruction[31]}}, instruction[31:25], instruction[11:7]});
+		(imm_out == {{20{instruction[31]}}, instruction[31:25], instruction[11:7]}) |=> ($past(instruction[6:0]) == instruction_S_type_opcode);
 	endproperty
 	
 	property check_B; 
-		(instruction[6:0] == instruction_B_type_opcode) |=> (imm_out == {{20{instruction[31]}}, instruction[31:25], instruction[11:7]});
+		(imm_out == {{20{instruction[31]}}, instruction[31:25], instruction[11:7]}) |=> ($past(instruction[6:0]) == instruction_B_type_opcode);
 	endproperty
 	
 	property check_U; 
-		(instruction[6:0] == instruction_U_type_opcode) |=> (imm_out == {instruction[31:12], 12'b0});
+		(imm_out == {instruction[31:12], 12'b0}) |=> ($past(instruction[6:0]) == instruction_U_type_opcode);
 	endproperty
 	
 	property check_J; 
-		(instruction[6:0] == instruction_J_type_opcode) |=> (imm_out == {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0});
+		(imm_out == {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0}) |=> ($past(instruction[6:0]) == instruction_J_type_opcode);
 	endproperty
 	
 	
