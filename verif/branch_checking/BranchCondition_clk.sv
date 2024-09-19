@@ -38,7 +38,7 @@ module BranchCondition(
 					else branch <= 0;
 				end
 				3'b111: begin 
-					if ($signed(rs1) >= $signed(rs2)) branch <= 1;
+					if (rs1 >= rs2) branch <= 1;
 					else branch <= 0;
 				end
 				default: branch <= 0;

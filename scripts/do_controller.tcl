@@ -1,6 +1,6 @@
 clear -all 
 
-analyze -sv09 ../verif/controlller_checking/Controller_clk.sv ../verif/controlller_checking/checker_controller.sv  ../verif/controlller_checking/bind_controller.sv
+analyze -sv09 ../verif/controller_checking/Controller_clk.sv ../verif/controller_checking/checker_controller.sv  ../verif/controller_checking/bind_controller.sv
 
 elaborate -top Controller
 

@@ -14,6 +14,7 @@ module Controller
 	
 	logic [3:0] alu_op_next; 
 	logic [2:0] mask_next; 
+	logic [2:0] func3_past; 
 	logic [2:0] br_type_next;
 	logic [1:0] wb_sel_next; 
 	logic reg_wr_next; 
@@ -22,12 +23,12 @@ module Controller
 	logic rd_en_next; 
 	logic wr_en_next; 
 	
-	
 	always_comb begin
 		func3 <= instruction[14:12];
 		func7 <= instruction[31:25];
 		opcode <= instruction[6:0];
 	end
+
 
     always_comb begin
     	case (opcode)
@@ -127,11 +128,13 @@ module Controller
 			sel_A   <= 0; 
 			sel_B   <= 0; 
 			rd_en   <= 0; 
-			wr_en   <= 0; 			
+			wr_en   <= 0; 		
+			func3_past <= 0;	
 		end 
 	 	else begin 
 			alu_op  <= alu_op_next;
 			mask    <= mask_next; 
+			func3_past <= func3;
 			br_type <= br_type_next;
 			wb_sel  <= wb_sel_next; 
 			reg_wr  <= reg_wr_next; 

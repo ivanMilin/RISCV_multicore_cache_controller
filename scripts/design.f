@@ -1,0 +1,14 @@
+../hdl/PC.sv
+../hdl/Add4.sv
+../hdl/Mux2.sv
+../hdl/InstructionMemory.sv
+../hdl/RegisterFile.sv
+../hdl/ImmediateGenerator.sv
+../hdl/BranchCondition.sv
+../hdl/Controller.sv
+../hdl/ALU.sv
+../hdl/DataMemory.sv
+../hdl/WriteBack.sv
+../hdl/Processor.sv
+../verif/reference_model/ref_model.sv 
+../verif/reference_model/bind_ref_model.sv
