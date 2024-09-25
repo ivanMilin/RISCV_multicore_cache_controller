@@ -1,11 +1,12 @@
 `timescale 1ns / 1ps
 
 module Processor(input logic clk, reset);
-    logic [31:0] plus4, next_index, wdata, rdata, index, A, B, B_i, A_r, B_r, instruction, alu_out;
-    logic [3:0] alu_op;
-    logic [2:0] mask, br_type;
-    logic [1:0] wb_sel;
-    logic reg_wr, rd_en, wr_en, sel_A, sel_B, br_taken;
+    logic [31:0] plus4 = 32'b0, next_index = 32'b0, wdata = 32'b0, rdata = 32'b0, index = 32'b0;
+    logic [31:0] A = 32'b0, B = 32'b0, B_i = 32'b0, A_r = 32'b0, B_r = 32'b0, instruction = 32'b0, alu_out = 32'b0;
+    logic [3:0] alu_op = 4'b0;
+    logic [2:0] mask = 3'b0, br_type = 3'b0;
+    logic [1:0] wb_sel = 2'b0;
+    logic reg_wr = 1'b0, rd_en = 1'b0, wr_en = 1'b0, sel_A = 1'b0, sel_B = 1'b0, br_taken = 1'b0;
     
     PC pc (.clk(clk), .reset(reset), .B(next_index), .A(index));
     Add4 add4 (.A(index), .B(plus4));

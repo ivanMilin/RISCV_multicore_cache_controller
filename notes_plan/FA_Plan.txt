@@ -1,1 +1,15 @@
 Formal verification plan
+
+Signals that needs to be asserted :
+1. PC - for every clock should be incremented PC = PC + 4, only for Jump-opcode and Branch-opcode PC should be PC = PC + immediate;
+2. All controll-signal should be assigned in ref-model and this values will be checked if they are matching with DUT-controll-signal
+3. Check data in register-file if they are matching with DUT-register-file (IVA ???)
+4. Check data is it written correctly in DataMemory (location-based-coupling)
+	(In first clock store data, and on another rising edge load same data from same address)
+
+** Cemu sluzi "reg"
+** Jel dovoljno da pisemo samo asserte ili da negde pisemo i cover-e ?
+** Izmodelujemo registarskog polje kao AUX kod, mozemo da npr proverimo da li sme u nulti registar da se upise podatak
+** Functional i code coverage ?
+** stopat ?
+	  
