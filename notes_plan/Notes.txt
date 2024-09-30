@@ -34,3 +34,7 @@ This file explains briefly what each component does and if its checked via simul
 
 9. Processor (Top file)
    - Connects everything.
+
+Bugs found during simulation and formal verification
+1. Wrong implementation of data-memory (lw,lb,lh)
+2. Wrong implementation of I-opcode in controller 
