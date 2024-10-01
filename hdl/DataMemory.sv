@@ -1,6 +1,6 @@
-module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input logic wr_en, rd_en, clk,
+module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input logic wr_en, rd_en, clk,reset,
 				  output logic [31:0] rdata);
-	logic [31:0] memory [1023:0] = '{default : 32'b0};		// 1 KB Memory size
+	logic [31:0] memory [1023:0];		// 1 KB Memory size
 	logic [31:0] data, write_data,read_data_from_memory;
 
 	always_comb begin
@@ -68,13 +68,14 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 						//2: write_data = {24'b0, wdata[23:16]};
 						//3: write_data = {24'b0, wdata[31:24]};
 				
-                        0: write_data = (memory[addr[31:2]] & 32'hFFFFFF00) | {24'b0, wdata[7:0]};
-                        1: write_data = (memory[addr[31:2]] & 32'hFFFF00FF) | {16'b0, wdata[7:0], 8'b0};
-                        2: write_data = (memory[addr[31:2]] & 32'hFF00FFFF) | {8'b0, wdata[7:0], 16'b0};
-                        3: write_data = (memory[addr[31:2]] & 32'h00FFFFFF) | {wdata[7:0], 24'b0};
-						default ;
+						0: write_data = (memory[addr[31:2]] & 32'hFFFFFF00) | {24'b0, wdata[7:0]};
+						1: write_data = (memory[addr[31:2]] & 32'hFFFF00FF) | {16'b0, wdata[7:0], 8'b0};
+						2: write_data = (memory[addr[31:2]] & 32'hFF00FFFF) | {8'b0, wdata[7:0], 16'b0};
+						3: write_data = (memory[addr[31:2]] & 32'h00FFFFFF) | {wdata[7:0], 24'b0};
+						default : write_data = 0;
 					endcase
 				end
+
 				3'b001: begin	// Store halfword
 					case (addr[1])
 					    //0: write_data = {16'b0, wdata[15:0]};
@@ -82,19 +83,25 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 						
 						0: write_data = (memory[addr[31:2]] & 32'hFFFF0000) | {16'b0, wdata[15:0]};
 						1: write_data = (memory[addr[31:2]] & 32'h0000FFFF) | {wdata[15:0],16'b0};
-						default ;
+						default : write_data = 0;
 					endcase
 				end
 				3'b010: begin	// Store word
 					write_data = wdata;
 				end
+				// This is changed - did not exist before
+			        default : write_data = 0;
 			endcase
 		end
 	end
 	
 	always_ff @(posedge clk) begin
-		if (wr_en) begin
-			memory[addr[31:2]] <= write_data;
+		if(reset) begin
+			memory = '{default:32'b0}; 
+		end else begin 
+			if (wr_en) begin
+				memory[addr[31:2]] <= write_data;
+			end
 		end
 	end
 endmodule

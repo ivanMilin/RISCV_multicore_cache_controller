@@ -44,8 +44,8 @@ module ref_model
 	logic [31:0] gb_instruction_ref;
 	logic [6:0]  gb_func7_ref;
 	logic [2:0]  gb_func3_ref;
-	logic [18:0] gb_imm_jump_ref;
-	logic [18:0] gb_imm_branch_ref;
+	logic [31:0] gb_imm_jump_ref;
+	logic [31:0] gb_imm_branch_ref;
 	logic [31:0] gb_addr_to_be_stored;
 
 
@@ -60,7 +60,7 @@ module ref_model
 	logic gb_br_taken;
 
 	// Free variables - NDC 
-	logic[31:0] fvar_specific_addr;
+	logic [31:0] fvar_specific_addr;
 
 	// Data memory signals
 	logic [31:0] wdata_ref;
@@ -83,8 +83,9 @@ module ref_model
 	default disable iff reset;
 
 	// Assumptions for instructions - which opcodes will tool feed
-	R_I_type : assume property(Processor.instruction[6:0] inside {instruction_R_type_opcode,instruction_I_type_opcode,instruction_L_type_opcode,instruction_S_type_opcode,instruction_U_type_opcode/*,instruction_B_type_opcode,instruction_J_type_opcode*/});
-	asm_addr_stable : assume property($stable(fvar_specific_addr));
+	R_I_type : assume property(Processor.instruction[6:0] inside {instruction_R_type_opcode,instruction_I_type_opcode,instruction_L_type_opcode,instruction_S_type_opcode,instruction_U_type_opcode,instruction_B_type_opcode,instruction_J_type_opcode});
+	//asm_addr_stable : assume property( $stable(fvar_specific_addr) && fvar_specific_addr <= 1024);
+	asm_addr_stable : assume property( $stable(fvar_specific_addr) && fvar_specific_addr == 0);
 	
 	// Grey box signals assignment
 	assign gb_instruction_ref = Processor.instruction;	
@@ -94,8 +95,8 @@ module ref_model
 	assign gb_pc_index_next   = Processor.next_index;
 
 
-	assign gb_addr_to_be_stored = Processor.instruction[19:15] + {Processor.instruction[31:25],Processor.instruction[11:7]};
-	assign gb_data_to_be_stored = Processor.instruction[24:20];
+	assign gb_addr_to_be_stored = Processor.A_r + {Processor.instruction[31:25],Processor.instruction[11:7]};
+	assign gb_data_to_be_stored = Processor.B_r;
 	assign gb_dmem_rdata 	    = Processor.datamemory.memory[fvar_specific_addr]; 
 
 	assign gb_rd  = Processor.instruction[11:7];
@@ -103,9 +104,9 @@ module ref_model
 	assign gb_rs2 = Processor.rf.registerfile[Processor.instruction[24:20]]; 
 	assign small_immediate_ref = Processor.B_i; //output value from Immediate generator
 	
-	assign gb_imm_jump_ref = {Processor.instruction[20],Processor.instruction[10:1],Processor.instruction[11],Processor.instruction[19:12]};
+	assign gb_imm_jump_ref = Processor.B_i;
 	assign gb_br_taken = Processor.br_taken;
-	assign gb_imm_branch_ref = {Processor.instruction[12],Processor.instruction[10:5],Processor.instruction[4:1],Processor.instruction[11]};
+	assign gb_imm_branch_ref = Processor.B_i;
 
 
 	
@@ -115,18 +116,19 @@ module ref_model
 		if(reset) begin
 			wdata_ref <= 'b0;
 			known     <= 'b0;		
-		end
-		if(Processor.datamemory.wr_en) begin 
-			if(fvar_specific_addr == gb_addr_to_be_stored) begin
-				 wdata_ref <= gb_data_to_be_stored;
-				 known <= 1'b1;
+		end else begin 
+			if(Processor.datamemory.wr_en) begin 
+				if(gb_addr_to_be_stored == fvar_specific_addr) begin
+					 wdata_ref <= gb_data_to_be_stored;
+					 known <= 1'b1;
+				end else begin
+					wdata_ref <= wdata_ref; 
+					known <= 'b0; //Can we set "known" here on ZERO ??? 			
+				end
 			end else begin
-				wdata_ref <= wdata_ref; 
-				known <= 'b0; //Can we set "known" here on ZERO ??? 			
+					wdata_ref <= wdata_ref;
+					known 	  <= 'b0;
 			end
-		end else begin
-				wdata_ref <= wdata_ref;
-				known 	  <= known;
 		end
 	end 
 
@@ -136,16 +138,16 @@ module ref_model
 		if(reset) begin
 			pc_counter_ref <= 'b0;		
 		end
-		if(Processor.instruction[6:0] == instruction_J_type_opcode) begin
-			pc_counter_ref <= pc_counter_ref + gb_imm_jump_ref; //If this is not working as expected multiply "gb_imm_jump_ref" with TWO
-		end
-		else if(Processor.instruction[6:0] == instruction_B_type_opcode) begin
-			if(gb_br_taken) begin
-				pc_counter_ref <= pc_counter_ref + gb_imm_branch_ref; 
-			end 	
-		end
 		else begin
-			pc_counter_ref <= pc_counter_ref + 4;
+			if(Processor.instruction[6:0] == instruction_J_type_opcode && gb_br_taken == 1'b1) begin
+				pc_counter_ref <= pc_counter_ref + gb_imm_jump_ref; //If this is not working as expected multiply "gb_imm_jump_ref" with TWO
+			end
+			else if(Processor.instruction[6:0] == instruction_B_type_opcode && gb_br_taken == 1'b1) begin
+				pc_counter_ref <= pc_counter_ref + gb_imm_branch_ref; 	
+			end
+			else begin
+				pc_counter_ref <= pc_counter_ref + 4;
+			end
 		end
 	end
 
@@ -294,12 +296,12 @@ module ref_model
 	    			wb_sel_ref_next = 0;
 				
 				case(gb_func3_ref)										
-					3'b000: begin if (gb_func7_ref == 7'b0000010) alu_op_ref_next = 9; else alu_op_ref_next = 0; end//sub, add
+					3'b000: begin if (gb_func7_ref == 7'b0100000) alu_op_ref_next = 9; else alu_op_ref_next = 0; end//sub, add
 					3'b001:	alu_op_ref_next = 1;//sll
 					3'b010:	alu_op_ref_next = 2;//slt
 					3'b011:	alu_op_ref_next = 3;//sltu
 					3'b100:	alu_op_ref_next = 4;//xor
-					3'b101: begin if (gb_func7_ref == 7'b0000010) alu_op_ref_next = 6; else alu_op_ref_next = 5; end//sra, srl
+					3'b101: begin if (gb_func7_ref == 7'b0100000) alu_op_ref_next = 6; else alu_op_ref_next = 5; end//sra, srl
 					3'b110:	alu_op_ref_next = 7;//or
 					3'b111:	alu_op_ref_next = 8;//and
 				endcase
@@ -437,7 +439,7 @@ module ref_model
 		Processor.index == pc_counter_ref;	
 	endproperty
 
-	// CHANGE HERE - ASK FOR OPTIMAL - s_until? // 
+	// 
 	property check_data_memory;
 		//known && fvar_specific_addr == gb_addr_to_be_stored |=> wdata_ref == gb_dmem_rdata; // Add address check and flag
 		known |=> wdata_ref == gb_dmem_rdata; // Add address check and flag

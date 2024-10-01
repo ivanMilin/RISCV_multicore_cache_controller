@@ -4,7 +4,7 @@ module RegisterFile(
     input logic [31:0] wdata,
     output logic [31:0] rdata1, rdata2
 );
-    logic [31:0] registerfile [31:0] = '{default:'b0};  // Initialize all registers to zero
+    logic [31:0] registerfile [31:0];  // Initialize all registers to zero
 
     always_comb begin
         rdata1 = registerfile[raddr1];
@@ -12,9 +12,14 @@ module RegisterFile(
     end
 
     always_ff @(negedge clk) begin
-        if (reg_wr & (waddr != 0)) begin
-            registerfile[waddr] <= wdata;
-        end
+	if(reset) begin 
+		registerfile = '{default:'b0};
+	end else begin
+		if (reg_wr & (waddr != 0)) begin
+		    registerfile[waddr] <= wdata;
+		end
+	end
     end
+
 endmodule
 

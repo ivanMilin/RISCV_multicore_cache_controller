@@ -24,6 +24,6 @@ module Processor(input logic clk, reset);
     Controller controller (.instruction(instruction), .alu_op(alu_op), .mask(mask), .br_type(br_type), .reg_wr(reg_wr), .sel_A(sel_A), .sel_B(sel_B), .rd_en(rd_en), .wr_en(wr_en), .wb_sel(wb_sel));
     ALU alu (.A(A), .B(B), .alu_op(alu_op), .C(alu_out));
     
-    DataMemory memory (.addr(alu_out), .wdata(B_r), .mask(mask), .wr_en(wr_en), .rd_en(rd_en), .clk(clk), .rdata(rdata));
+    DataMemory datamemory (.addr(alu_out), .wdata(B_r), .mask(mask), .wr_en(wr_en), .rd_en(rd_en), .clk(clk), .reset(reset), .rdata(rdata));
     WriteBack writeback (.A(alu_out), .B(rdata), .C(index), .wb_sel(wb_sel), .wdata(wdata));
 endmodule
