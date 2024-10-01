@@ -1,16 +1,16 @@
 `timescale 1ns / 1ps
 
 module Processor(input logic clk, reset);
-    logic [31:0] plus4 = 32'b0, next_index = 32'b0, wdata = 32'b0, rdata = 32'b0, index = 32'b0;
-    logic [31:0] A = 32'b0, B = 32'b0, B_i = 32'b0, A_r = 32'b0, B_r = 32'b0, instruction = 32'b0, alu_out = 32'b0;
-    logic [3:0] alu_op = 4'b0;
-    logic [2:0] mask = 3'b0, br_type = 3'b0;
-    logic [1:0] wb_sel = 2'b0;
-    logic reg_wr = 1'b0, rd_en = 1'b0, wr_en = 1'b0, sel_A = 1'b0, sel_B = 1'b0, br_taken = 1'b0;
+    logic [31:0] plus4, next_index, wdata, rdata, index, A, B, B_i, A_r, B_r, instruction, alu_out, add_imm_s;
+    logic [3:0] alu_op;
+    logic [2:0] mask, br_type;
+    logic [1:0] wb_sel;
+    logic reg_wr, rd_en, wr_en, sel_A, sel_B, br_taken;
     
     PC pc (.clk(clk), .reset(reset), .B(next_index), .A(index));
     Add4 add4 (.A(index), .B(plus4));
-    Mux2 select_PC (.A(plus4), .B(alu_out), .sel(br_taken), .C(next_index));
+    add_immediate add_imm(.in1(index), .in2(B_i), .out(add_imm_s));
+    Mux2 select_PC (.A(plus4), .B(add_imm_s), .sel(br_taken), .C(next_index));
     
     InstructionMemory im (.addr(index), .instruction(instruction));
 
@@ -24,6 +24,6 @@ module Processor(input logic clk, reset);
     Controller controller (.instruction(instruction), .alu_op(alu_op), .mask(mask), .br_type(br_type), .reg_wr(reg_wr), .sel_A(sel_A), .sel_B(sel_B), .rd_en(rd_en), .wr_en(wr_en), .wb_sel(wb_sel));
     ALU alu (.A(A), .B(B), .alu_op(alu_op), .C(alu_out));
     
-    DataMemory datamemory (.addr(alu_out), .wdata(B_r), .mask(mask), .wr_en(wr_en), .rd_en(rd_en), .clk(clk), .rdata(rdata));
+    DataMemory memory (.addr(alu_out), .wdata(B_r), .mask(mask), .wr_en(wr_en), .rd_en(rd_en), .clk(clk), .rdata(rdata));
     WriteBack writeback (.A(alu_out), .B(rdata), .C(index), .wb_sel(wb_sel), .wdata(wdata));
 endmodule

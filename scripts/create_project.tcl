@@ -15,6 +15,7 @@ set_property board_part digilentinc.com:zybo-z7-10:part0:1.2 [current_project]
 # Ukljucivanje svih izvornih i simulacionih fajlova u projekat
 # ===================================================================================
 add_files -norecurse ../hdl/Add4.sv
+add_files -norecurse ../hdl/add_immediate.sv
 add_files -norecurse ../hdl/ALU.sv
 add_files -norecurse ../hdl/BranchCondition.sv
 add_files -norecurse ../hdl/Controller.sv
@@ -26,8 +27,6 @@ add_files -norecurse ../hdl/PC.sv
 add_files -norecurse ../hdl/Processor.sv
 add_files -norecurse ../hdl/RegisterFile.sv
 add_files -norecurse ../hdl/WriteBack.sv
-#add_files -norecurse ../hdl/code.mem
-
 update_compile_order -fileset sources_1
 add_files -norecurse ../hdl/code.mem
 

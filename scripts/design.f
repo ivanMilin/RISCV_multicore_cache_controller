@@ -1,5 +1,6 @@
 ../hdl/PC.sv
 ../hdl/Add4.sv
+../hdl/add_immediate.sv
 ../hdl/Mux2.sv
 ../hdl/InstructionMemory.sv
 ../hdl/RegisterFile.sv

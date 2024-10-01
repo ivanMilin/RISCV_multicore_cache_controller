@@ -9,13 +9,11 @@ module Controller(
 	logic [2:0] func3;
 	logic [6:0] func7;
 	logic [6:0] opcode;
-	logic [11:0] immediate_I_type;
 	
 	always_comb begin
 		func3 = instruction[14:12];
 		func7 = instruction[31:25];
 		opcode = instruction[6:0];
-		immediate_I_type = instruction[31:25]; // Please note that this is SAME as func7
 	end
 
     always_comb begin
@@ -29,7 +27,6 @@ module Controller(
 	wr_en = 'b0;
 	mask = 'b0;
 	br_type = 'b0;
-	immediate_I_type = 'b0;
     	case (opcode)
     		7'b0110011: begin	// R-type instructions
     			reg_wr = 1;
@@ -38,12 +35,12 @@ module Controller(
     			rd_en = 0;
     			wb_sel = 0;
 				case (func3)
-					3'b000: begin if (func7 == 7'b0000010) alu_op = 9; else alu_op = 0; end                                                   //sub, add
+					3'b000: begin if (func7 == 7'b0100000) alu_op = 9; else alu_op = 0; end                                                   //sub, add
 					3'b001:	alu_op = 1;													  //sll
 					3'b010:	alu_op = 2;													  //slt
 					3'b011:	alu_op = 3;                                                      						  //sltu
 					3'b100:	alu_op = 4;													  //xor
-					3'b101: begin if (func7 == 7'b0000010) alu_op = 6; else alu_op = 5; end 						  //sra, srl
+					3'b101: begin if (func7 == 7'b0100000) alu_op = 6; else alu_op = 5; end 						  //sra, srl
 					3'b110:	alu_op = 7;												          //or
 					3'b111:	alu_op = 8;       												  //and
 				endcase
@@ -56,7 +53,7 @@ module Controller(
     			wb_sel = 0;
 				case (func3)
 					3'b000: alu_op = 0;													  //addi
-					3'b001:	begin if (Processor.instruction[31:25] == 7'b0000000) alu_op = 1; end						  //slli 
+					3'b001:	alu_op = 1;						                              //slli 
 					3'b010:	alu_op = 2;													  //slti
 					3'b011:	alu_op = 3;													  //sltiu
 					3'b100:	alu_op = 4;													  //xori
