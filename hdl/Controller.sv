@@ -15,7 +15,7 @@ module Controller(
 		func3 = instruction[14:12];
 		func7 = instruction[31:25];
 		opcode = instruction[6:0];
-		immediate_I_type = instruction[31:25];
+		immediate_I_type = instruction[31:25]; // Please note that this is SAME as func7
 	end
 
     always_comb begin

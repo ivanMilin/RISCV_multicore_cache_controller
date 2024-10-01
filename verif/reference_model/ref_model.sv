@@ -48,8 +48,6 @@ module ref_model
 	logic [18:0] gb_imm_branch_ref;
 	logic [31:0] gb_addr_to_be_stored;
 
-	// CHANGE HERE // 
-	logic[2:0] prev_func3;
 
 	// Grey box signals from DUT - will be assigned
 	logic [31:0] gb_pc_index;	
@@ -110,33 +108,6 @@ module ref_model
 	assign gb_imm_branch_ref = {Processor.instruction[12],Processor.instruction[10:5],Processor.instruction[4:1],Processor.instruction[11]};
 
 
-	// Flip flops to clock values from combinational network
-	always_ff @(posedge clk) begin	
-		if(reset) begin
-			index_ref   <= 'b0;	
-			alu_op_ref  <= 'b0; 
-			mask_ref    <= 'b0; 
-			br_type_ref <= 'b0;
-			wb_sel_ref  <= 'b0; 
-			reg_wr_ref  <= 'b0; 
-			sel_A_ref   <= 'b0; 
-			sel_B_ref   <= 'b0; 
-			rd_en_ref   <= 'b0; 
-			wr_en_ref   <= 'b0;
-		end
-		else begin
-			index_ref   <= index_ref_next;	
-			alu_op_ref  <= alu_op_ref_next; 
-			mask_ref    <= mask_ref_next; 
-			br_type_ref <= br_type_ref_next;
-			wb_sel_ref  <= wb_sel_ref_next; 
-			reg_wr_ref  <= reg_wr_ref_next; 
-			sel_A_ref   <= sel_A_ref_next; 
-			sel_B_ref   <= sel_B_ref_next; 
-			rd_en_ref   <= rd_en_ref_next; 
-			wr_en_ref   <= wr_en_ref_next;
-		end
-	end
 	
 	// AUX code for data memory // 
 	// Write data on fvar_specific_addr - STORE INSTRUCTION
@@ -178,22 +149,14 @@ module ref_model
 		end
 	end
 
-	// AUX code for LOAD
-	/*
-	always_ff @(negedge clk) begin
-		if(Processor.instruction[6:0] == instruction_L_type_opcode) begin
-			
-		end	
-	end 
-	*/
-	// AUX code for register file 
+	//======================= REGISTER FILE AUX LOGIC ===================//
 	always_comb begin 
+	
 		result_ref 	 = 'b0;
 		operand1_ref 	 = 'b0;
 		operand2_ref 	 = 'b0;
 		destination_addr = 'b0;
 
-		
 		case(gb_instruction_ref[6:0])
 			instruction_R_type_opcode : begin 
 				
@@ -278,7 +241,37 @@ module ref_model
 			end
 		endcase
 	end 
-		
+	
+	
+	//================== CONTROLLER AUX LOGIC ===================//
+	// Clocked values - Sequential logic 
+	always_ff @(posedge clk) begin	
+		if(reset) begin
+			index_ref   <= 'b0;	
+			alu_op_ref  <= 'b0; 
+			mask_ref    <= 'b0; 
+			br_type_ref <= 'b0;
+			wb_sel_ref  <= 'b0; 
+			reg_wr_ref  <= 'b0; 
+			sel_A_ref   <= 'b0; 
+			sel_B_ref   <= 'b0; 
+			rd_en_ref   <= 'b0; 
+			wr_en_ref   <= 'b0;
+		end
+		else begin
+			index_ref   <= index_ref_next;	
+			alu_op_ref  <= alu_op_ref_next; 
+			mask_ref    <= mask_ref_next; 
+			br_type_ref <= br_type_ref_next;
+			wb_sel_ref  <= wb_sel_ref_next; 
+			reg_wr_ref  <= reg_wr_ref_next; 
+			sel_A_ref   <= sel_A_ref_next; 
+			sel_B_ref   <= sel_B_ref_next; 
+			rd_en_ref   <= rd_en_ref_next; 
+			wr_en_ref   <= wr_en_ref_next;
+		end
+	end
+	
 	// Combinational logic
 	always_comb begin
 		index_ref_next   = index_ref;	
