@@ -1,6 +1,6 @@
 module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input logic wr_en, rd_en, clk,reset,
 				  output logic [31:0] rdata);
-	logic [31:0] memory [1023:0];		// 1 KB Memory size
+	logic [31:0] memory [1023:0] ;//= '{default:32'b0};		// 1 KB Memory size
 	logic [31:0] data, write_data,read_data_from_memory;
 
 	always_comb begin
@@ -97,8 +97,11 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	
 	always_ff @(posedge clk) begin
 		if(reset) begin
-			memory = '{default:32'b0}; 
-		end else begin 
+          for (integer i = 0; i < 1024; i = i + 1) begin
+            memory[i] <= 32'b0;
+          end
+		end 
+		else begin 
 			if (wr_en) begin
 				memory[addr[31:2]] <= write_data;
 			end

@@ -2,10 +2,10 @@
 
 #####################################################
 
-addi x3, x0, 9
+addi x3, x0, 1119
 addi x4, x0, 0xbb
 addi x5, x0, 0xac
-addi x1,x0,0x2
+addi x1, x0, 0x112
 
 sw x1,0(x0)
 
@@ -19,15 +19,16 @@ sb x4, 11(x0)
 
 lb x6,0(x0)
 lh x7,4(x0)
+lw x8,0(x0) 
 
 #####################################################
 
 In case of testing this, just copy the hexa values down under.
 
-00900193
+45f00193
 0bb00213
 0ac00293
-00200093
+11200093
 00102023
 00501223
 00501323
@@ -37,4 +38,4 @@ In case of testing this, just copy the hexa values down under.
 004005a3
 00000303
 00401383
-00802403
+00002403
