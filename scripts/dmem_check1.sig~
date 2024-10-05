@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wavelist version="3">
+  <insertion-point-position>18</insertion-point-position>
+  <wave>
+    <expr>clk</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave>
+    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_data_memory</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave>
+    <expr>chk_ref_model.clk</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.fvar_specific_addr[1:0]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.gb_dmem_rdata</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave>
+    <expr>chk_ref_model.known</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave>
+    <expr>chk_ref_model.reset</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.wdata_ref</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.gb_dmem_rdata[1:0]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.wdata_ref[1:0]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>mask</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>instruction</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.fvar_specific_addr</expr>
+    <label/>
+    <radix>dec</radix>
+  </wave>
+  <wave collapsed="true">
+    <expr>datamemory.memory[12]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>datamemory.write_data</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>datamemory.wdata</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>datamemory.memory[3]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>datamemory.addr</expr>
+    <label/>
+    <radix>bin</radix>
+  </wave>
+</wavelist>

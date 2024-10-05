@@ -95,7 +95,7 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 		end
 	end
 	
-	always_ff @(posedge clk) begin
+	always_ff @(negedge clk) begin
 		if(reset) begin
           for (integer i = 0; i < 1024; i = i + 1) begin
             memory[i] <= 32'b0;
@@ -104,6 +104,7 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 		else begin 
 			if (wr_en) begin
 				memory[addr[31:2]] <= write_data;
+				//memory[addr[31:0]] <= write_data;
 			end
 		end
 	end

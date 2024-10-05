@@ -13,7 +13,9 @@ module RegisterFile(
 
     always_ff @(negedge clk) begin
 	if(reset) begin 
-		registerfile = '{default:'b0};
+	for (integer i = 0; i < 32; i = i + 1) begin
+            registerfile[i] <= i;
+  	end
 	end else begin
 		if (reg_wr & (waddr != 0)) begin
 		    registerfile[waddr] <= wdata;
