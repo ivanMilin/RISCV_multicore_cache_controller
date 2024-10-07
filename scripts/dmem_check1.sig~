@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wavelist version="3">
-  <insertion-point-position>18</insertion-point-position>
+  <insertion-point-position>16</insertion-point-position>
   <wave>
     <expr>clk</expr>
     <label/>
     <radix/>
   </wave>
   <wave>
-    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_data_memory</expr>
+    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_load_in_rf</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.address_from_rf</expr>
     <label/>
     <radix/>
   </wave>
@@ -16,79 +21,63 @@
     <label/>
     <radix/>
   </wave>
-  <wave collapsed="true">
-    <expr>chk_ref_model.fvar_specific_addr[1:0]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>chk_ref_model.gb_dmem_rdata</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave>
-    <expr>chk_ref_model.known</expr>
-    <label/>
-    <radix/>
-  </wave>
   <wave>
     <expr>chk_ref_model.reset</expr>
     <label/>
     <radix/>
   </wave>
-  <wave collapsed="true">
-    <expr>chk_ref_model.wdata_ref</expr>
+  <wave>
+    <expr>chk_ref_model.valid_loaded</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>chk_ref_model.gb_dmem_rdata[1:0]</expr>
+    <expr>rf.registerfile[23]</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>chk_ref_model.wdata_ref[1:0]</expr>
+    <expr>rf.registerfile[7]</expr>
     <label/>
     <radix/>
   </wave>
-  <wave collapsed="true">
-    <expr>mask</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>instruction</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>chk_ref_model.fvar_specific_addr</expr>
-    <label/>
-    <radix>dec</radix>
-  </wave>
-  <wave collapsed="true">
-    <expr>datamemory.memory[12]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>datamemory.write_data</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>datamemory.wdata</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>datamemory.memory[3]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>datamemory.addr</expr>
-    <label/>
-    <radix>bin</radix>
-  </wave>
+  <group collapsed="false">
+    <expr>chk_ref_model.struct_assignment</expr>
+    <label>chk_ref_model.struct_assignment</label>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.imm_31_25</expr>
+      <label/>
+      <radix/>
+    </wave>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.rs2</expr>
+      <label/>
+      <radix/>
+    </wave>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.rs1</expr>
+      <label/>
+      <radix/>
+    </wave>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.funct3</expr>
+      <label/>
+      <radix/>
+    </wave>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.imm_11_7</expr>
+      <label/>
+      <radix/>
+    </wave>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.rd</expr>
+      <label/>
+      <radix/>
+    </wave>
+    <wave collapsed="true">
+      <expr>chk_ref_model.struct_assignment.opcode</expr>
+      <label/>
+      <radix/>
+    </wave>
+  </group>
 </wavelist>

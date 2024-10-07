@@ -14,7 +14,7 @@ module RegisterFile(
     always_ff @(negedge clk) begin
 	if(reset) begin 
 	for (integer i = 0; i < 32; i = i + 1) begin
-            registerfile[i] <= i;
+            registerfile[i] <= 'b0;
   	end
 	end else begin
 		if (reg_wr & (waddr != 0)) begin

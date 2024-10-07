@@ -5,8 +5,8 @@ module ALU(input logic [31:0] A, B, input logic [3:0] alu_op,
 		case (alu_op)
 		    0:  C = A + B;
 		    1:  C = A << B;
-		    2:  C = $signed(A) < $signed(B);
-		    3:  C = A < B;
+		    2:  C = (A < B)?1:0;
+		    3:  C = (A < B)?1:0;
 		    4:  C = A ^ B;
 		    5:  C = A >> B;
 		    6:  C = A >>> B;

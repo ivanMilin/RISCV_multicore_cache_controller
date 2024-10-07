@@ -9,13 +9,13 @@ module ref_model
 	
 	// Constant parametes - opcodes for each instruction type
 	// =========== TRY TO PLACE DEFINE MACROS HERE ============ //
-	parameter[6:0] instruction_R_type_opcode = TYPE_R;
-	parameter[6:0] instruction_I_type_opcode = TYPE_I;
-	parameter[6:0] instruction_L_type_opcode = TYPE_L;
-	parameter[6:0] instruction_S_type_opcode = TYPE_S;
-	parameter[6:0] instruction_B_type_opcode = TYPE_B;
-	parameter[6:0] instruction_U_type_opcode = TYPE_U;
-	parameter[6:0] instruction_J_type_opcode = TYPE_J;
+	parameter[6:0] instruction_R_type_opcode = `TYPE_R;
+	parameter[6:0] instruction_I_type_opcode = `TYPE_I;
+	parameter[6:0] instruction_L_type_opcode = `TYPE_L;
+	parameter[6:0] instruction_S_type_opcode = `TYPE_S;
+	parameter[6:0] instruction_B_type_opcode = `TYPE_B;
+	parameter[6:0] instruction_U_type_opcode = `TYPE_U;
+	parameter[6:0] instruction_J_type_opcode = `TYPE_J;
 	
 	/*
 	parameter[6:0] instruction_R_type_opcode = 7'b0110011;
@@ -65,6 +65,11 @@ module ref_model
 	logic [31:0] gb_imm_jump_ref;
 	logic [31:0] gb_imm_branch_ref;
 	logic [31:0] gb_addr_to_be_stored;
+	
+	//Signals for cheching jump and branch 
+	logic jump_ref;
+	logic branch_ref;
+	logic br_taken_ref;
 
 
 	// Grey box signals from DUT - will be assigned
@@ -92,8 +97,10 @@ module ref_model
 	logic [31:0] operand1_ref;
 	logic [31:0] operand2_ref;
 	logic [31:0] result_ref;
+	logic [31:0] result_ref_reg;
 	logic [31:0] destination_addr;
 	logic [11:0] small_immediate_ref;
+	logic [31:0] signed_small_immediate_ref;
 	logic [19:0] big_immediate_ref;
 
 	//PC counter
@@ -150,6 +157,7 @@ module ref_model
 	assign gb_rs1 = Processor.rf.registerfile[Processor.instruction[19:15]];
 	assign gb_rs2 = Processor.rf.registerfile[Processor.instruction[24:20]]; 
 	assign small_immediate_ref = Processor.B_i; //output value from Immediate generator
+	assign signed_small_immediate_ref = $signed(small_immediate_ref);
 	
 	assign gb_imm_jump_ref = Processor.B_i;
 	assign gb_br_taken = Processor.br_taken;
@@ -302,16 +310,85 @@ module ref_model
 	end
 	
 	
+	//======================= PROGRAM COUNTER AUX LOGIC ===================//
 	// AUX code for PC (program counter) - Branch and jump can not be checked like this, dont steal branch taken from DUT, but calculate it here
+	always_comb begin
+		jump_ref = 0;
+		branch_ref = 0;
+	
+		if(Processor.instruction[6:0] == instruction_J_type_opcode) begin
+			jump_ref = 1;
+		end
+		else if(Processor.instruction[6:0] == instruction_B_type_opcode) begin
+			case(Processor.instruction[14:12]) 
+				3'b000: begin
+					if(gb_rs1 == gb_rs2) begin
+						branch_ref = 1;
+					end
+					else begin 
+						branch_ref = 0;
+					end
+				end
+				3'b001: begin
+					if(gb_rs1 != gb_rs2) begin
+						branch_ref = 1;
+					end
+					else begin
+						branch_ref = 0;
+					end
+				end
+				3'b100: begin
+					if(gb_rs1 < gb_rs2) begin
+						branch_ref = 1;
+					end
+					else begin
+						branch_ref = 0;
+					end
+				end
+				3'b101: begin
+					if(gb_rs1 >= gb_rs2) begin
+						branch_ref = 1;
+					end
+					else begin
+						branch_ref = 0;
+					end
+				end
+				3'b110: begin
+					if($signed(gb_rs1) < $signed(gb_rs2)) begin
+						branch_ref = 1;
+					end
+					else begin
+						branch_ref = 0;
+					end
+				end
+				3'b111: begin
+					if($signed(gb_rs1) >= $signed(gb_rs2)) begin
+						branch_ref = 1;
+					end
+					else begin
+						branch_ref = 0;
+					end
+				end
+				default: branch_ref = 0;
+			endcase
+		end
+		else begin
+			branch_ref = 0;
+			jump_ref   = 0;
+		end
+		
+		br_taken_ref = (branch_ref | jump_ref);
+	end
+	
 	always_ff @(posedge clk) begin
 		if(reset) begin
 			pc_counter_ref <= 'b0;		
 		end
 		else begin
-			if(Processor.instruction[6:0] == instruction_J_type_opcode && gb_br_taken == 1'b1) begin
+			if(Processor.instruction[6:0] == instruction_J_type_opcode && br_taken_ref == 1'b1) begin
 				pc_counter_ref <= pc_counter_ref + gb_imm_jump_ref; //If this is not working as expected multiply "gb_imm_jump_ref" with TWO
 			end
-			else if(Processor.instruction[6:0] == instruction_B_type_opcode && gb_br_taken == 1'b1) begin
+			else if(Processor.instruction[6:0] == instruction_B_type_opcode && br_taken_ref == 1'b1) begin
 				pc_counter_ref <= pc_counter_ref + gb_imm_branch_ref; 	
 			end
 			else begin
@@ -319,10 +396,9 @@ module ref_model
 			end
 		end
 	end
-
+	
 	//======================= REGISTER FILE AUX LOGIC ===================//
 	// Error in following : rs1 and rs2 in our code CANT match rd, since we use combinational logic, sequentilize this or find other way
-	/*
 	always_comb begin 
 	
 		result_ref 	 = 'b0;
@@ -350,10 +426,10 @@ module ref_model
 							result_ref = operand1_ref << operand2_ref;
 					end
 					3'b010: begin		//SLT
-							result_ref = $signed(operand1_ref) < $signed(operand2_ref);
+							result_ref = (operand1_ref < operand2_ref)?1:0;
 					end
 					3'b011: begin		//SLTU
-							result_ref = operand1_ref < operand2_ref;
+							result_ref = (operand1_ref < operand2_ref)?1:0;
 					end
 					3'b100: begin		//XOR
 						result_ref = operand1_ref ^ operand2_ref;
@@ -380,42 +456,52 @@ module ref_model
 
 				case(gb_func3_ref) 
 					3'b000 : begin		//ADDI 
-						result_ref = operand1_ref + small_immediate_ref;
+						result_ref = operand1_ref + signed_small_immediate_ref;
 					end
 					3'b001: begin		//SLLI
 						if(small_immediate_ref[11:5] == 'b0) begin
-							result_ref = operand1_ref << small_immediate_ref[4:0];
+							result_ref = operand1_ref << signed_small_immediate_ref;
 						end					
 					end
 					3'b010: begin		//SLTI
-							result_ref = $signed(operand1_ref) < $signed(small_immediate_ref);
+						result_ref = (operand1_ref < signed_small_immediate_ref) ? 1 : 0;
 					end
 					3'b011: begin		//SLTIU
-							result_ref = operand1_ref < small_immediate_ref;
+						result_ref = (operand1_ref < signed_small_immediate_ref) ? 1 : 0;
 					end
 					3'b100: begin		//XORI
-						result_ref = operand1_ref ^ small_immediate_ref;
+						result_ref = operand1_ref ^ signed_small_immediate_ref;
 					end
 					3'b101: begin		//SRAI, SRLI  
 						if(small_immediate_ref == 7'b0100000) begin 
-							result_ref = operand1_ref >>> small_immediate_ref[4:0];
+							result_ref = operand1_ref >>> signed_small_immediate_ref;
 						end 
-						else if(small_immediate_ref == 'b0) begin
-							result_ref = operand1_ref >> small_immediate_ref[4:0];
+						else begin
+							result_ref = operand1_ref >> signed_small_immediate_ref;
 						end
 					end
 					3'b110: begin		//ORI
-						result_ref = operand1_ref | small_immediate_ref;
+						result_ref = operand1_ref | signed_small_immediate_ref;
 					end
 					3'b111: begin		//ANDI
-						result_ref = operand1_ref & small_immediate_ref;
+						result_ref = operand1_ref & signed_small_immediate_ref;
 					end
 				endcase
 			end
 		endcase
 	end 
-	*/
 	
+	always_ff @(negedge clk) begin
+		if(reset) begin
+			result_ref_reg <= 'b0;	
+		end 
+		else begin
+			result_ref_reg <= result_ref;
+		end
+	end
+	
+	
+	/*
 	// Test this logic for register file value check
 	always_ff @(posedge clk) begin 
 		if(reset) begin 
@@ -471,9 +557,7 @@ module ref_model
 							result_ref <= gb_rs1 + small_immediate_ref;
 						end
 						3'b001: begin		//SLLI
-							if(small_immediate_ref[11:5] == 'b0) begin
-								result_ref <= gb_rs1 << small_immediate_ref[4:0];
-							end					
+							result_ref <= gb_rs1 << small_immediate_ref[4:0];					
 						end
 						3'b010: begin		//SLTI
 								result_ref <= $signed(gb_rs1) < $signed(small_immediate_ref);
@@ -488,7 +572,7 @@ module ref_model
 							if(small_immediate_ref == 7'b0100000) begin 
 								result_ref <= gb_rs1 >>> small_immediate_ref[4:0];
 							end 
-							else if(small_immediate_ref == 'b0) begin
+							else begin
 								result_ref <= gb_rs1 >> small_immediate_ref[4:0];
 							end
 						end
@@ -503,7 +587,7 @@ module ref_model
 			endcase
 		end
 	end 
-	
+	*/
 	//================== CONTROLLER AUX LOGIC ===================//
 	// Clocked values - Sequential logic 
 	always_ff @(posedge clk) begin	
@@ -711,27 +795,27 @@ module ref_model
 
 	// Property that checks if values in register file are correct after R and I instruction, should U type be here aswell?
 	property check_rf_R_I;
-		Processor.instruction[6:0] == instruction_R_type_opcode || Processor.instruction[6:0] == instruction_I_type_opcode |=> Processor.rf.registerfile[destination_addr] == result_ref;
+		Processor.instruction[6:0] == instruction_R_type_opcode || Processor.instruction[6:0] == instruction_I_type_opcode |-> Processor.rf.registerfile[destination_addr] == result_ref_reg;
 	endproperty
 	
 	
 	// ===================== ASSERTIONS SECTION ==================== //
  
 	// ============ CONTROLLER ASSERTS =========== //
-	//assert_instruction_R_type_opcode : assert property( @(posedge clk) check_instruction_R_type_opcode);
-	//assert_instruction_I_type_opcode : assert property( @(posedge clk) check_instruction_I_type_opcode);
-	//assert_instruction_U_type_opcode : assert property( @(posedge clk) check_instruction_U_type_opcode);
-	//assert_check_instruction_L_S_type_opcode : assert property (@(posedge clk) check_instruction_L_S_type_opcode);
+	assert_instruction_R_type_opcode : assert property( @(posedge clk) check_instruction_R_type_opcode);
+	assert_instruction_I_type_opcode : assert property( @(posedge clk) check_instruction_I_type_opcode);
+	assert_instruction_U_type_opcode : assert property( @(posedge clk) check_instruction_U_type_opcode);
+	assert_check_instruction_L_S_type_opcode : assert property (@(posedge clk) check_instruction_L_S_type_opcode);
 	
 	// ============= PROGRAM COUNTER ASSERTS ============ //
-	//assert_check_PC    : assert property(@(posedge clk) check_PC);
+	assert_check_PC    : assert property(@(posedge clk) check_PC);
 	
 	// ============= DATA MEMORY ASSERTS ============= //
-	//assert_check_data_memory : assert property(@(posedge clk) check_data_memory);
-	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); // Additional cover that helped us work out issues with datamemory
+	assert_check_data_memory : assert property(@(posedge clk) check_data_memory);
+	cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); // Additional cover that helped us work out issues with datamemory
 	
 	// ============= REGISTER FILE ASSERTS ============ //
-	//assert_check_load_in_rf : assert property (@(negedge clk) check_load_in_rf);
+	assert_check_load_in_rf : assert property (@(negedge clk) check_load_in_rf);
 	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); 
 
 	// ============= REGISTER FILE RESULT CHECK  ASSERTS ================ //
@@ -739,15 +823,4 @@ module ref_model
 		
 endmodule
 
-/*
-Left to fix or consider : 
-	1. Assert to check if values are correct in register file - look in the comments for that AUX issue
-	2. Resolve the issue with DEFINE and string instruction views and perhaps masks 
-	3. Branch and jump PC check in reference model - look in the comment for that AUX issue 
-	4. Discuss the STORE/LOAD logically if it makes sense
-
-packed vs unpacked
--> logic registar[31:0] (unpacked)
--> logic [31:0] registar(packed)
-*/
 
