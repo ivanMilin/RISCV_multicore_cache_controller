@@ -8,6 +8,16 @@ module ref_model
 	`include "structs.sv"	
 	
 	// Constant parametes - opcodes for each instruction type
+	// =========== TRY TO PLACE DEFINE MACROS HERE ============ //
+	parameter[6:0] instruction_R_type_opcode = TYPE_R;
+	parameter[6:0] instruction_I_type_opcode = TYPE_I;
+	parameter[6:0] instruction_L_type_opcode = TYPE_L;
+	parameter[6:0] instruction_S_type_opcode = TYPE_S;
+	parameter[6:0] instruction_B_type_opcode = TYPE_B;
+	parameter[6:0] instruction_U_type_opcode = TYPE_U;
+	parameter[6:0] instruction_J_type_opcode = TYPE_J;
+	
+	/*
 	parameter[6:0] instruction_R_type_opcode = 7'b0110011;
 	parameter[6:0] instruction_I_type_opcode = 7'b0010011;
 	parameter[6:0] instruction_L_type_opcode = 7'b0000011;
@@ -15,6 +25,7 @@ module ref_model
 	parameter[6:0] instruction_B_type_opcode = 7'b1100011;
 	parameter[6:0] instruction_U_type_opcode = 7'b0110111;
 	parameter[6:0] instruction_J_type_opcode = 7'b1101111;
+	*/
 
 	// Control singals (combinational) - for reference model 
 	logic [31:0] rdata_ref;
@@ -311,6 +322,7 @@ module ref_model
 
 	//======================= REGISTER FILE AUX LOGIC ===================//
 	// Error in following : rs1 and rs2 in our code CANT match rd, since we use combinational logic, sequentilize this or find other way
+	/*
 	always_comb begin 
 	
 		result_ref 	 = 'b0;
@@ -402,7 +414,95 @@ module ref_model
 			end
 		endcase
 	end 
+	*/
 	
+	// Test this logic for register file value check
+	always_ff @(posedge clk) begin 
+		if(reset) begin 
+			result_ref 	 <= 'b0;
+			destination_addr <= 'b0;
+		end else begin 
+			destination_addr <= gb_rd; // Destination address to remember for a property
+			
+			case(gb_instruction_ref[6:0])
+				instruction_R_type_opcode : begin 
+					case(gb_func3_ref) 
+						3'b000 : begin		//SUB,ADD 
+							if(gb_func7_ref == 7'b0100000) begin
+								result_ref <= gb_rs1 - gb_rs2;
+							end 
+							else begin
+								result_ref <= gb_rs1 + gb_rs2;
+							end
+						end
+						3'b001: begin		//SLL
+								result_ref <= gb_rs1 << gb_rs2;
+						end
+						3'b010: begin		//SLT
+								result_ref <= $signed(gb_rs1) < $signed(gb_rs2);
+						end
+						3'b011: begin		//SLTU
+								result_ref <= gb_rs1 < gb_rs2;
+						end
+						3'b100: begin		//XOR
+							result_ref <= gb_rs1 ^ gb_rs2;
+						end
+						3'b101: begin		//SRA, SRL
+							if(gb_func7_ref == 7'b0100000) begin 
+								result_ref <= gb_rs1 >>> gb_rs2;
+							end 
+							else begin
+								result_ref <= gb_rs1 >> gb_rs2;
+							end
+						end
+						3'b110: begin		//OR
+							result_ref <= gb_rs1 | gb_rs2;
+						end
+						3'b111: begin		//AND
+							result_ref <= gb_rs1 & gb_rs2;
+						end
+					endcase
+				end
+				
+				instruction_I_type_opcode: begin
+
+					case(gb_func3_ref) 
+						3'b000 : begin		//ADDI 
+							result_ref <= gb_rs1 + small_immediate_ref;
+						end
+						3'b001: begin		//SLLI
+							if(small_immediate_ref[11:5] == 'b0) begin
+								result_ref <= gb_rs1 << small_immediate_ref[4:0];
+							end					
+						end
+						3'b010: begin		//SLTI
+								result_ref <= $signed(gb_rs1) < $signed(small_immediate_ref);
+						end
+						3'b011: begin		//SLTIU
+								result_ref <= gb_rs1 < small_immediate_ref;
+						end
+						3'b100: begin		//XORI
+							result_ref <= gb_rs1 ^ small_immediate_ref;
+						end
+						3'b101: begin		//SRAI, SRLI  
+							if(small_immediate_ref == 7'b0100000) begin 
+								result_ref <= gb_rs1 >>> small_immediate_ref[4:0];
+							end 
+							else if(small_immediate_ref == 'b0) begin
+								result_ref <= gb_rs1 >> small_immediate_ref[4:0];
+							end
+						end
+						3'b110: begin		//ORI
+							result_ref <= gb_rs1 | small_immediate_ref;
+						end
+						3'b111: begin		//ANDI
+							result_ref <= gb_rs1 & small_immediate_ref;
+						end
+					endcase
+				end
+			endcase
+		end
+	end 
 	
 	//================== CONTROLLER AUX LOGIC ===================//
 	// Clocked values - Sequential logic 
@@ -613,6 +713,7 @@ module ref_model
 	property check_rf_R_I;
 		Processor.instruction[6:0] == instruction_R_type_opcode || Processor.instruction[6:0] == instruction_I_type_opcode |=> Processor.rf.registerfile[destination_addr] == result_ref;
 	endproperty
+	
 	
 	// ===================== ASSERTIONS SECTION ==================== //
  
