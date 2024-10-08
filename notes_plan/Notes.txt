@@ -37,4 +37,6 @@ This file explains briefly what each component does and if its checked via simul
 
 Bugs found during simulation and formal verification
 1. Wrong implementation of data-memory (lw,lb,lh)
-2. Wrong implementation of I-opcode in controller 
+2. Wrong implementation of I - opcode in controller 
+3. Wrong implementation of U - opcode in controller, wrong value of "alu_op" (found while testing LUI)
+4. Wrong implementation of alu - missing state in switch-case for LUI 

@@ -100,7 +100,7 @@ module Controller(
     			rd_en = 0;
     			wr_en = 0;
     			wb_sel = 0;
-    			alu_op = 0;
+    			alu_op = 10;
     		end
 			7'b1101111: begin	// J-type instructions
     			reg_wr = 1;

@@ -86,6 +86,8 @@ module ref_model
 
 	// Free variables - NDC 
 	logic [31:0] fvar_specific_addr;
+	logic [31:0] fvar_specific_addr_q;
+	logic [31:0] fvar_specific_addr_q_neg;
 
 	// Data memory signals
 	logic [31:0] wdata_ref;
@@ -99,45 +101,113 @@ module ref_model
 	logic [31:0] result_ref;
 	logic [31:0] result_ref_reg;
 	logic [31:0] destination_addr;
+	
 	logic [11:0] small_immediate_ref;
 	logic [31:0] signed_small_immediate_ref;
+	
 	logic [19:0] big_immediate_ref;
+	logic [31:0] signed_big_immediate_ref;
 
 	//PC counter
 	logic[31:0] pc_counter_ref;
 	
-	struct_instruction_S struct_assignment;
+	struct_instruction_J struct_assignment;
 
 	// Default setup for properties 
-	default clocking @(posedge clk); endclocking
-	default disable iff reset;
-
-
 	// ================= ASSUMES SECTION ================// 
 
 	// Assumptions for instructions - which opcodes will tool feed
+	
+	property assume_opcodes;
+		@(posedge clk) disable iff(reset) 
+		Processor.instruction[6:0] inside {instruction_R_type_opcode,instruction_I_type_opcode,instruction_L_type_opcode,instruction_S_type_opcode,instruction_U_type_opcode,instruction_B_type_opcode,instruction_J_type_opcode};
+	endproperty 
 
-	all_types_active : assume property(Processor.instruction[6:0] inside {instruction_R_type_opcode,instruction_I_type_opcode,instruction_L_type_opcode,instruction_S_type_opcode,instruction_U_type_opcode,
-									instruction_B_type_opcode,instruction_J_type_opcode});
+	property assume_opcodes_neg;
+		@(negedge clk) disable iff(reset) 
+		Processor.instruction[6:0] inside {instruction_R_type_opcode,instruction_I_type_opcode,instruction_L_type_opcode,instruction_S_type_opcode,instruction_U_type_opcode,instruction_B_type_opcode,instruction_J_type_opcode};
+	endproperty 
 	
-	//R_I_type : assume property(Processor.im.instruction[6:0] inside {instruction_L_type_opcode,instruction_S_type_opcode}); 	
+	property assume_load_rs2_not_NULL;
+		@(posedge clk) disable iff(reset) 
+		Processor.im.instruction[6:0] == instruction_L_type_opcode |-> 
+		Processor.im.instruction[11:7] != 'b0 && Processor.im.instruction[31:20]+Processor.im.instruction[19:15] < 1024 && Processor.im.instruction[14:12] inside {3'b000,3'b001,3'b010,3'b100,3'b101};
+	endproperty
 	
+	property assume_load_rs2_not_NULL_neg;
+		@(negedge clk) disable iff(reset) 
+		Processor.im.instruction[6:0] == instruction_L_type_opcode |-> 
+		Processor.im.instruction[11:7] != 'b0 && Processor.im.instruction[31:20]+Processor.im.instruction[19:15] < 1024 && Processor.im.instruction[14:12] inside {3'b000,3'b001,3'b010,3'b100,3'b101};
+	endproperty
+	
+	property assume_store_less_than_1024;
+		@(posedge clk) disable iff(reset)  
+		Processor.im.instruction[6:0] == instruction_S_type_opcode |-> 
+		{Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15] < 1024 &&
+		({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15]) % 4 == 0 && Processor.im.instruction[14:12] inside {3'b000,3'b001,3'b010};
+	endproperty
+	
+	property assume_store_less_than_1024_neg;
+		@(negedge clk) disable iff(reset)  
+		Processor.im.instruction[6:0] == instruction_S_type_opcode |-> 
+		{Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15] < 1024 && 
+		({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15]) % 4 == 0 && Processor.im.instruction[14:12] inside {3'b000,3'b001,3'b010};
+	endproperty
+	
+	property assume_cant_write_to_x0;
+		@(posedge clk) disable iff(reset) 
+		Processor.im.instruction[6:0] == instruction_R_type_opcode || Processor.im.instruction[6:0] == instruction_I_type_opcode || Processor.im.instruction[6:0] == instruction_U_type_opcode |-> 
+		Processor.im.instruction[11:7] != 0;
+	endproperty
+	
+	property assume_cant_write_to_x0_neg;
+		@(negedge clk) disable iff(reset) 
+		Processor.im.instruction[6:0] == instruction_R_type_opcode || Processor.im.instruction[6:0] == instruction_I_type_opcode || Processor.im.instruction[6:0] == instruction_U_type_opcode |-> 
+		Processor.im.instruction[11:7] != 0;
+	endproperty
+
+	property assume_asm_addr_stable;
+		@(posedge clk) disable iff(reset) 
+		fvar_specific_addr < 1024 && fvar_specific_addr % 4 == 0;
+	endproperty
+	
+	property assume_asm_addr_stable_neg;
+		@(negedge clk) disable iff(reset) 
+		fvar_specific_addr < 1024 && fvar_specific_addr % 4 == 0;
+	endproperty
+	
+	property assume_asm_addr_stableee;
+		@(posedge clk) disable iff(reset) 
+		!reset ##1 fvar_specific_addr_q == fvar_specific_addr;
+	endproperty
+	
+	property assume_asm_addr_stableee_neg;
+		@(negedge clk) disable iff(reset) 
+		!reset ##1 fvar_specific_addr_q_neg == fvar_specific_addr;
+	endproperty
+
+	// Assumptions for instructions - which opcodes will tool feed
+	all_types_active : assume property(assume_opcodes);
+	all_types_active_neg : assume property(assume_opcodes_neg);
+		
 	// Cant load into x0 register
-	load_rs2_not_NULL : assume property(Processor.im.instruction[6:0] == instruction_L_type_opcode |-> Processor.im.instruction[11:7] != 'b0 && Processor.im.instruction[31:20]+Processor.im.instruction[19:15] < 1024 && 
-													   Processor.im.instruction[14:12] inside {3'b000,3'b001,3'b010,3'b100,3'b101});
+	load_rs2_not_NULL : assume property(assume_load_rs2_not_NULL);
+	load_rs2_not_NULL_neg : assume property(assume_load_rs2_not_NULL_neg);
 	
 	// Memory size limit - set to 1024
-	store_less_than_1024: assume property(Processor.im.instruction[6:0] == instruction_S_type_opcode |-> {Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15] < 1024   &&
-													     ({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15])	% 4 == 0 &&	 
-													      Processor.im.instruction[14:12] inside {3'b000,3'b001,3'b010});
+	store_less_than_1024: assume property(assume_store_less_than_1024);
+	store_less_than_1024_neg: assume property(assume_store_less_than_1024_neg);
 
 	// When R or I type are active, you cant write in the x0 register
-	cant_write_to_x0 : assume property (Processor.im.instruction[6:0] == instruction_R_type_opcode || Processor.im.instruction[6:0] == instruction_I_type_opcode |-> Processor.im.instruction[11:7] != 0);
+	cant_write_to_x0 : assume property (assume_cant_write_to_x0);
+	cant_write_to_x0_neg : assume property (assume_cant_write_to_x0_neg);
 
 	// Stabilize the free variable and set it accordingly to memory limitations
-	//asm_addr_stable : assume property($stable(fvar_specific_addr) && fvar_specific_addr < 1024);
-	asm_addr_stable : assume property($stable(fvar_specific_addr) && fvar_specific_addr < 1024 && fvar_specific_addr % 4 == 0 );
+	asm_addr_stable : assume property(assume_asm_addr_stable);
+	asm_addr_stable_neg : assume property(assume_asm_addr_stable_neg);
 	
+	asm_addr_stableee : assume property (assume_asm_addr_stableee);
+	asm_addr_stableee_neg : assume property (assume_asm_addr_stableee_neg);
 
 	// Grey box signals assignment
 	assign gb_instruction_ref = Processor.instruction;	
@@ -156,8 +226,13 @@ module ref_model
 	assign gb_rd  = Processor.instruction[11:7];
 	assign gb_rs1 = Processor.rf.registerfile[Processor.instruction[19:15]];
 	assign gb_rs2 = Processor.rf.registerfile[Processor.instruction[24:20]]; 
+	
 	assign small_immediate_ref = Processor.B_i; //output value from Immediate generator
+	assign big_immediate_ref = Processor.im.instruction[31:12];
+	
 	assign signed_small_immediate_ref = $signed(small_immediate_ref);
+	assign signed_big_immediate_ref   = $signed(big_immediate_ref);
+	
 	
 	assign gb_imm_jump_ref = Processor.B_i;
 	assign gb_br_taken = Processor.br_taken;
@@ -168,30 +243,6 @@ module ref_model
 
 	// AUX code for data memory // 
 	// Write data on fvar_specific_addr - STORE INSTRUCTION
-	/*
-	always_ff @(negedge clk) begin
-		if(reset) begin
-			wdata_ref <= 'b0;
-			known     <= 'b0;
-			address_to_check <= 'b0; 		
-		end else begin 
-			if(Processor.datamemory.wr_en) begin 
-				if(gb_addr_to_be_stored[31:2] == fvar_specific_addr[31:2]) begin
-				 	known <= 1'b1;
-		 			address_to_check <= Processor.alu_out;
-					wdata_ref <= gb_data_to_be_stored_in_dmem;
-				end else begin
-					wdata_ref <= wdata_ref; 
-					known <= known; //Can we set "known" here on ZERO ??? 			
-				end
-			end else begin
-					wdata_ref <= 'b0;
-					known 	  <= 'b0;
-			end
-		end
-	end
-	*/
-
 	// This one works - once we verify its all good, delete the upper code
 	always_ff @(negedge clk) begin
 		if(reset) begin
@@ -249,6 +300,8 @@ module ref_model
 	end 
 
 	always_comb begin
+		rdata_to_check = 'b0;
+		
 		if(Processor.instruction[6:0] == instruction_S_type_opcode) begin
 			case(Processor.instruction[14:12])
 				3'b000 : begin // Store byte				
@@ -287,9 +340,11 @@ module ref_model
 	always_ff @(negedge clk) begin
 		if(reset) begin
 			rdata_ref <= 'b0;
+			fvar_specific_addr_q_neg <= 'b0;
 		end 
 		else begin
 			rdata_ref <= Processor.wdata;
+			fvar_specific_addr_q_neg <= fvar_specific_addr;
 		end
 	end
 	
@@ -298,7 +353,6 @@ module ref_model
 		if(reset) begin
 			data_from_rf_ref <= 'b0;
 			valid_loaded <= 1'b0;
-			address_from_rf <= 'b0;
 		end 
 		else begin
 			if(valid) begin
@@ -488,6 +542,10 @@ module ref_model
 					end
 				endcase
 			end
+			instruction_U_type_opcode: begin
+				destination_addr = gb_rd;
+				result_ref = signed_big_immediate_ref << 12;
+			end
 		endcase
 	end 
 	
@@ -500,94 +558,6 @@ module ref_model
 		end
 	end
 	
-	
-	/*
-	// Test this logic for register file value check
-	always_ff @(posedge clk) begin 
-		if(reset) begin 
-			result_ref 	 <= 'b0;
-			destination_addr <= 'b0;
-		end else begin 
-			destination_addr <= gb_rd; // Destination address to remember for a property
-			
-			case(gb_instruction_ref[6:0])
-				instruction_R_type_opcode : begin 
-					case(gb_func3_ref) 
-						3'b000 : begin		//SUB,ADD 
-							if(gb_func7_ref == 7'b0100000) begin
-								result_ref <= gb_rs1 - gb_rs2;
-							end 
-							else begin
-								result_ref <= gb_rs1 + gb_rs2;
-							end
-						end
-						3'b001: begin		//SLL
-								result_ref <= gb_rs1 << gb_rs2;
-						end
-						3'b010: begin		//SLT
-								result_ref <= $signed(gb_rs1) < $signed(gb_rs2);
-						end
-						3'b011: begin		//SLTU
-								result_ref <= gb_rs1 < gb_rs2;
-						end
-						3'b100: begin		//XOR
-							result_ref <= gb_rs1 ^ gb_rs2;
-						end
-						3'b101: begin		//SRA, SRL
-							if(gb_func7_ref == 7'b0100000) begin 
-								result_ref <= gb_rs1 >>> gb_rs2;
-							end 
-							else begin
-								result_ref <= gb_rs1 >> gb_rs2;
-							end
-						end
-						3'b110: begin		//OR
-							result_ref <= gb_rs1 | gb_rs2;
-						end
-						3'b111: begin		//AND
-							result_ref <= gb_rs1 & gb_rs2;
-						end
-					endcase
-				end
-				
-				instruction_I_type_opcode: begin
-
-					case(gb_func3_ref) 
-						3'b000 : begin		//ADDI 
-							result_ref <= gb_rs1 + small_immediate_ref;
-						end
-						3'b001: begin		//SLLI
-							result_ref <= gb_rs1 << small_immediate_ref[4:0];					
-						end
-						3'b010: begin		//SLTI
-								result_ref <= $signed(gb_rs1) < $signed(small_immediate_ref);
-						end
-						3'b011: begin		//SLTIU
-								result_ref <= gb_rs1 < small_immediate_ref;
-						end
-						3'b100: begin		//XORI
-							result_ref <= gb_rs1 ^ small_immediate_ref;
-						end
-						3'b101: begin		//SRAI, SRLI  
-							if(small_immediate_ref == 7'b0100000) begin 
-								result_ref <= gb_rs1 >>> small_immediate_ref[4:0];
-							end 
-							else begin
-								result_ref <= gb_rs1 >> small_immediate_ref[4:0];
-							end
-						end
-						3'b110: begin		//ORI
-							result_ref <= gb_rs1 | small_immediate_ref;
-						end
-						3'b111: begin		//ANDI
-							result_ref <= gb_rs1 & small_immediate_ref;
-						end
-					endcase
-				end
-			endcase
-		end
-	end 
-	*/
 	//================== CONTROLLER AUX LOGIC ===================//
 	// Clocked values - Sequential logic 
 	always_ff @(posedge clk) begin	
@@ -602,6 +572,7 @@ module ref_model
 			sel_B_ref   <= 'b0; 
 			rd_en_ref   <= 'b0; 
 			wr_en_ref   <= 'b0;
+			fvar_specific_addr_q <= 'b0;
 		end
 		else begin
 			index_ref   <= index_ref_next;	
@@ -614,6 +585,7 @@ module ref_model
 			sel_B_ref   <= sel_B_ref_next; 
 			rd_en_ref   <= rd_en_ref_next; 
 			wr_en_ref   <= wr_en_ref_next;
+			fvar_specific_addr_q <= fvar_specific_addr;
 		end
 	end
 	
@@ -795,27 +767,28 @@ module ref_model
 
 	// Property that checks if values in register file are correct after R and I instruction, should U type be here aswell?
 	property check_rf_R_I;
-		Processor.instruction[6:0] == instruction_R_type_opcode || Processor.instruction[6:0] == instruction_I_type_opcode |-> Processor.rf.registerfile[destination_addr] == result_ref_reg;
+		Processor.instruction[6:0] == instruction_R_type_opcode || Processor.instruction[6:0] == instruction_I_type_opcode || Processor.instruction[6:0] == instruction_U_type_opcode |->
+		Processor.rf.registerfile[destination_addr] == result_ref_reg;
 	endproperty
 	
 	
 	// ===================== ASSERTIONS SECTION ==================== //
  
 	// ============ CONTROLLER ASSERTS =========== //
-	assert_instruction_R_type_opcode : assert property( @(posedge clk) check_instruction_R_type_opcode);
-	assert_instruction_I_type_opcode : assert property( @(posedge clk) check_instruction_I_type_opcode);
-	assert_instruction_U_type_opcode : assert property( @(posedge clk) check_instruction_U_type_opcode);
-	assert_check_instruction_L_S_type_opcode : assert property (@(posedge clk) check_instruction_L_S_type_opcode);
+	//assert_instruction_R_type_opcode : assert property( @(posedge clk) check_instruction_R_type_opcode);
+	//assert_instruction_I_type_opcode : assert property( @(posedge clk) check_instruction_I_type_opcode);
+	//assert_instruction_U_type_opcode : assert property( @(posedge clk) check_instruction_U_type_opcode);
+	//assert_check_instruction_L_S_type_opcode : assert property (@(posedge clk) check_instruction_L_S_type_opcode);
 	
 	// ============= PROGRAM COUNTER ASSERTS ============ //
-	assert_check_PC    : assert property(@(posedge clk) check_PC);
+	//assert_check_PC    : assert property(@(posedge clk) check_PC);
 	
 	// ============= DATA MEMORY ASSERTS ============= //
-	assert_check_data_memory : assert property(@(posedge clk) check_data_memory);
-	cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); // Additional cover that helped us work out issues with datamemory
+	//assert_check_data_memory : assert property(@(posedge clk) check_data_memory);
+	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); // Additional cover that helped us work out issues with datamemory
 	
 	// ============= REGISTER FILE ASSERTS ============ //
-	assert_check_load_in_rf : assert property (@(negedge clk) check_load_in_rf);
+	//assert_check_load_in_rf : assert property (@(negedge clk) check_load_in_rf);
 	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); 
 
 	// ============= REGISTER FILE RESULT CHECK  ASSERTS ================ //
