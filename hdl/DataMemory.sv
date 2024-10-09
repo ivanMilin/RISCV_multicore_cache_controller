@@ -4,7 +4,7 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	logic [31:0] data, write_data,read_data_from_memory;
 
 	always_comb begin
-		data = 'b0;
+		//data = 'b0;
 		if (rd_en)
 			data = memory[addr[31:2]];
 		else

@@ -18,7 +18,6 @@ module Controller(
 
     always_comb begin
 	reg_wr = 'b0;
-	reg_wr = 'b0;
 	sel_A = 'b0;
 	sel_B = 'b0;
 	rd_en = 'b0;

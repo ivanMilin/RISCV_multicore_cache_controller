@@ -7,12 +7,7 @@
     <radix/>
   </wave>
   <wave>
-    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_load_in_rf</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>chk_ref_model.address_from_rf</expr>
+    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_rf_R_I</expr>
     <label/>
     <radix/>
   </wave>
@@ -21,23 +16,33 @@
     <label/>
     <radix/>
   </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.destination_addr</expr>
+    <label/>
+    <radix/>
+  </wave>
   <wave>
     <expr>chk_ref_model.reset</expr>
     <label/>
     <radix/>
   </wave>
-  <wave>
-    <expr>chk_ref_model.valid_loaded</expr>
+  <wave collapsed="true">
+    <expr>chk_ref_model.result_ref</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>rf.registerfile[23]</expr>
+    <expr>instruction[6:0]</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>rf.registerfile[7]</expr>
+    <expr>rf.registerfile[12]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>rf.registerfile[30]</expr>
     <label/>
     <radix/>
   </wave>
@@ -66,11 +71,6 @@
     </wave>
     <wave collapsed="true">
       <expr>chk_ref_model.struct_assignment.imm_11_7</expr>
-      <label/>
-      <radix/>
-    </wave>
-    <wave collapsed="true">
-      <expr>chk_ref_model.struct_assignment.rd</expr>
       <label/>
       <radix/>
     </wave>

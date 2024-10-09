@@ -2,11 +2,11 @@ module BranchCondition(input logic [31:0] rs1, rs2, input logic [2:0] br_type, i
 					   output logic br_taken);
 	logic branch, jump;
 	always_comb begin
-		jump = 'b0;
+		//jump = 'b0;
 		if (opcode == 7'b1101111) jump = 1; else jump = 0;
 	end
 	always_comb begin
-		branch = 'b0;
+		//branch = 'b0;
 		if (opcode == 7'b1100011) begin
 			case (br_type)
 				3'b000: begin 

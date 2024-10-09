@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wavelist version="3">
-  <insertion-point-position>16</insertion-point-position>
+  <insertion-point-position>15</insertion-point-position>
   <wave>
     <expr>clk</expr>
     <label/>
     <radix/>
   </wave>
   <wave>
-    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_rf_R_I</expr>
+    <expr>&lt;embedded&gt;::Processor.chk_ref_model.assert_check_data_memory</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model.address_to_check</expr>
     <label/>
     <radix/>
   </wave>
@@ -17,32 +22,22 @@
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>chk_ref_model.destination_addr</expr>
+    <expr>chk_ref_model.fvar_specific_addr</expr>
     <label/>
     <radix/>
   </wave>
   <wave>
-    <expr>chk_ref_model.reset</expr>
+    <expr>chk_ref_model.known</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>chk_ref_model.result_ref</expr>
+    <expr>chk_ref_model.rdata_to_check</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>instruction[6:0]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>rf.registerfile[12]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>rf.registerfile[30]</expr>
+    <expr>chk_ref_model.wdata_ref</expr>
     <label/>
     <radix/>
   </wave>

@@ -40,3 +40,4 @@ Bugs found during simulation and formal verification
 2. Wrong implementation of I - opcode in controller 
 3. Wrong implementation of U - opcode in controller, wrong value of "alu_op" (found while testing LUI)
 4. Wrong implementation of alu - missing state in switch-case for LUI 
+5. Wrong implementation of STORE half word and STORE byte in reference model.

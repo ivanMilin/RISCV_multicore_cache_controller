@@ -8,6 +8,7 @@ typedef struct packed
     logic [6:0] opcode;
 } struct_instruction_R;
 
+// Bit width is same for I and L 
 typedef struct packed 
 {
     logic [11:0] imm;
@@ -15,23 +16,24 @@ typedef struct packed
     logic [2:0]  funct3;
     logic [4:0]  rd;
     logic [6:0]  opcode;
-} struct_instruction_I; 	// Za I i za L je isti format
+} struct_instruction_I_L; 
 
+// Bit width is same for S and B 
 typedef struct packed 
 {
-    logic [6:0] imm_31_25;
-    logic [4:0] rs2;
-    logic [4:0] rs1;
-    logic [2:0] funct3;
-    logic [4:0] imm_11_7;
-    logic [6:0] opcode;
-} struct_instruction_S;
+    logic [11:0] imm;
+    logic [4:0]  rs2;
+    logic [4:0]  rs1;
+    logic [2:0]  funct3;
+    logic [6:0]  opcode;
+} struct_instruction_S_B;
 
+// Bit width is same for U and J 
 typedef struct packed 
 {
     logic [19:0] imm;
     logic [4:0]  rd;
     logic [6:0]  opcode;
-} struct_instruction_J;		// Za U i za J je isti format
+} struct_instruction_U_J;		
 
  
