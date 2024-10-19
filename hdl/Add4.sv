@@ -1,7 +1,7 @@
-module Add4 (input stall, input logic [31:0] A, output logic [31:0] B);
+module Add4 (input stall, reset, input logic [31:0] A, output logic [31:0] B);
     
     always_comb begin
-        if(stall == 0) begin
+        if(stall == 0 && !reset) begin
             B = A + 4;
         end 
         else begin

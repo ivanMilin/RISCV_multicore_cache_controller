@@ -1,5 +1,7 @@
-module InstructionMemory(input logic [31:0] addr, 
-                         output logic [31:0] instruction);
+module InstructionMemory(
+    input logic [31:0] addr, 
+    output logic [31:0] instruction
+);
     logic [31:0] instruction_memory [31:0];    
     initial begin
         $readmemh("code.mem", instruction_memory);  // Put the absolute path of the machine code that you want to execute. In our case "code.mem".

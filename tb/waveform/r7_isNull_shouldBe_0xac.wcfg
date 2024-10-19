@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="Processor_TB_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="Processor_TB" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="52.241 ns"></ZoomStartTime>
+      <ZoomEndTime time="59.452 ns"></ZoomEndTime>
+      <Cursor1Time time="53.251 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="207"></NameColumnWidth>
+      <ValueColumnWidth column_width="100"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="13" />
+   <wvobject fp_name="/Processor_TB/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/rf/wdata" type="array">
+      <obj_property name="ElementShortName">wdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">wdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/rf/reg_wr" type="logic">
+      <obj_property name="ElementShortName">reg_wr</obj_property>
+      <obj_property name="ObjectShortName">reg_wr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/rf/registerfile" type="array">
+      <obj_property name="ElementShortName">registerfile[31:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">registerfile[31:0][31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/opcode_in_s" type="array">
+      <obj_property name="ElementShortName">opcode_in_s[6:0]</obj_property>
+      <obj_property name="ObjectShortName">opcode_in_s[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/rd_en" type="logic">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/cache_memory_L1" type="array">
+      <obj_property name="ElementShortName">cache_memory_L1[255:0]</obj_property>
+      <obj_property name="ObjectShortName">cache_memory_L1[255:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/cache_hit" type="logic">
+      <obj_property name="ElementShortName">cache_hit</obj_property>
+      <obj_property name="ObjectShortName">cache_hit</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/stall" type="logic">
+      <obj_property name="ElementShortName">stall</obj_property>
+      <obj_property name="ObjectShortName">stall</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_cache" type="array">
+      <obj_property name="ElementShortName">data_from_cache[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_from_cache[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/rd_en" type="logic">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/mask" type="array">
+      <obj_property name="ElementShortName">mask[2:0]</obj_property>
+      <obj_property name="ObjectShortName">mask[2:0]</obj_property>
+   </wvobject>
+</wave_config>

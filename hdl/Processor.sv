@@ -8,7 +8,7 @@ module Processor(input logic clk, reset);
     
     PC pc (.clk(clk), .reset(reset), .B(next_index), .A(index));
            
-    Add4 add4 (.stall(stall), .A(index), .B(plus4));
+    Add4 add4 (.stall(stall), .reset(reset), .A(index), .B(plus4));
     add_immediate add_imm(.in1(index), .in2(B_i), .out(add_imm_s));
     Mux2 select_PC (.A(plus4), .B(add_imm_s), .sel(br_taken), .C(next_index));
     
@@ -24,7 +24,7 @@ module Processor(input logic clk, reset);
     Controller controller (.instruction(instruction), .alu_op(alu_op), .mask(mask), .br_type(br_type), .reg_wr(reg_wr), .sel_A(sel_A), .sel_B(sel_B), .rd_en(rd_en), .wr_en(wr_en), .wb_sel(wb_sel));
     ALU alu (.A(A), .B(B), .alu_op(alu_op), .C(alu_out));
     
-    DataMemory datamemory (.addr(dmem_address), .wdata(data_to_dmem), .mask(mask), .wr_en(wr_en || dmem_wr_en), .rd_en(rd_en || dmem_rd_en), .clk(clk), .reset(reset), .rdata(rdata));
+    DataMemory datamemory (.addr({22'b0,dmem_address}), .wdata(data_to_dmem), .mask(mask), .wr_en(wr_en || dmem_wr_en), .rd_en(rd_en || dmem_rd_en), .clk(clk), .reset(reset), .rdata(rdata));
     cache_subsystem_L1 controller_and_cache(.clk(clk), .reset(reset), .wr_en(wr_en), .rd_en(rd_en), .opcode_in(instruction[6:0]), .mask(mask), .data_in(B_r), .index_in(alu_out[7:0]), .tag_in(alu_out[9:8]), .stall(stall), .data_to_dmem(data_to_dmem), .data_from_dmem(rdata), .dmem_address(dmem_address), .data_from_cache(data_from_cache), .dmem_rd_en(dmem_rd_en), .dmem_wr_en(dmem_wr_en));
     WriteBack writeback (.A(alu_out), .B(data_from_cache), .C(index), .wb_sel(wb_sel), .wdata(wdata));
 endmodule
