@@ -1,3 +1,11 @@
-module Add4 (input logic [31:0] A, output logic [31:0] B);
-    assign B = A + 4;
+module Add4 (input stall, input logic [31:0] A, output logic [31:0] B);
+    
+    always_comb begin
+        if(stall == 0) begin
+            B = A + 4;
+        end 
+        else begin
+            B = A + 'b0;
+        end 
+    end
 endmodule

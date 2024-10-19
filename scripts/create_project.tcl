@@ -24,11 +24,14 @@ add_files -norecurse ../hdl/ImmediateGenerator.sv
 add_files -norecurse ../hdl/InstructionMemory.sv
 add_files -norecurse ../hdl/Mux2.sv
 add_files -norecurse ../hdl/PC.sv
-add_files -norecurse ../hdl/Processor.sv
+add_files -norecurse ../hdl/cache_subsystem_L1.sv
 add_files -norecurse ../hdl/RegisterFile.sv
 add_files -norecurse ../hdl/WriteBack.sv
+add_files -norecurse ../hdl/Processor.sv
+
 update_compile_order -fileset sources_1
 add_files -norecurse ../hdl/code.mem
+
 
 update_compile_order -fileset sources_1
 
