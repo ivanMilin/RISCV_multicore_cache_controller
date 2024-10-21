@@ -89,7 +89,7 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	always_ff @(negedge clk) begin
 		if(reset) begin
           for (integer i = 0; i < 1024; i = i + 1) begin
-            memory[i] <= 32'b0;
+            memory[i] <= i;//32'b0;
           end
 		end 
 		else begin 
