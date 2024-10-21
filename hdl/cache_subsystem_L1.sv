@@ -47,53 +47,35 @@ module cache_subsystem_L1(
     end
     
     always_comb begin
-        stall = 'b0;
         next_state = IDLE;
         case (state)
             IDLE: begin
                 stall = 1'b0;
-                if (rd_en && !cache_hit) begin
-                    next_state = MISS;   // On miss, fetch data from memory
+                if (cache_hit == 'b0) begin
+                    next_state = MISS;   
                 end else begin
                     next_state = IDLE;
                 end
             end
             MISS: begin
                 stall = 1'b1;
-                next_state = WAIT_WRITE;  // Wait to store data in cache on next negedge
+                next_state = WAIT_WRITE;  
             end
             WAIT_WRITE: begin
-                stall = 1'b1;
-                next_state = IDLE;  // Return to idle after storing data
+                next_state = IDLE; 
             end
-            default: next_state = IDLE;
         endcase
     end
     
     // Cache hit detection
     always_comb begin
-        if (cache_memory_L1[index_in].valid && (cache_memory_L1[index_in].tag == tag_in)) begin
+        if (cache_memory_L1[index_in[7:2]].valid && (cache_memory_L1[index_in[7:2]].tag == tag_in)) begin
             cache_hit = 1;
         end else begin
             cache_hit = 0;
         end
     end
 
-    // Cache read logic
-    //CHANGES HERE
-    /*
-    always_comb begin
-        if (rd_en && opcode_in == 7'b0000011) begin
-            if (cache_hit) begin
-                data_L1 = cache_memory_L1[index_in].data;
-            end else begin // Cache miss: request data from memory
-                data_L1 = 'b0;
-            end
-        end else begin
-            data_L1 = 'b0;
-        end
-    end
-    */
     always_comb begin
         if (rd_en) begin
             data_L1 = cache_memory_L1[index_in[7:2]].data;
@@ -106,7 +88,7 @@ module cache_subsystem_L1(
     // Load instruction based on mask
     always_comb begin
         data_from_cache = 'b0;
-        if (rd_en && cache_hit) begin
+        if (rd_en && cache_hit && !stall) begin
             case (mask) 
                 3'b000: begin   // Load byte (Signed)
                     case (index_in[1:0])
@@ -114,14 +96,12 @@ module cache_subsystem_L1(
                         1: data_from_cache = {{24{data_L1[15]}}, data_L1[15:8]};
                         2: data_from_cache = {{24{data_L1[23]}}, data_L1[23:16]};
                         3: data_from_cache = {{24{data_L1[31]}}, data_L1[31:24]};
-                        default: data_from_cache = 0;
                     endcase
                 end
                 3'b001: begin   // Load halfword (Signed)
                     case (index_in[1])
                         0: data_from_cache = {{16{data_L1[15]}}, data_L1[15:0]};
                         1: data_from_cache = {{16{data_L1[31]}}, data_L1[31:16]};
-                        default: data_from_cache = 0;
                     endcase
                 end
                 3'b010: begin   // Load word
@@ -133,17 +113,14 @@ module cache_subsystem_L1(
                         1: data_from_cache = {24'b0, data_L1[15:8]};
                         2: data_from_cache = {24'b0, data_L1[23:16]};
                         3: data_from_cache = {24'b0, data_L1[31:24]};
-                        default: data_from_cache = 0;
                     endcase
                 end
                 3'b101: begin   // Load halfword (Unsigned)
                     case (index_in[1])
                         0: data_from_cache = {16'b0, data_L1[15:0]};
                         1: data_from_cache = {16'b0, data_L1[31:16]};
-                        default: data_from_cache = 0;
                     endcase
                 end
-                default: data_from_cache = 'b0;
             endcase   
         end
     end
@@ -188,16 +165,18 @@ module cache_subsystem_L1(
             end
         end 
         else begin
+            dmem_address <= {tag_in, index_in};
+        
             if (state == IDLE && wr_en) begin    
                 cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: write_L1};
-                dmem_address <= {tag_in, index_in};
+                //
                 data_to_dmem <= write_L1;
             end else if (state == MISS && wr_en) begin
                 if (dmem_rd_en) begin
-                    //dmem_data_reg <= data_from_dmem;
+                    dmem_data_reg <= data_from_dmem;
                 end
             end else if (state == WAIT_WRITE && wr_en) begin
-                //cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: dmem_data_reg};
+                cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: dmem_data_reg};
             end
         end
     end

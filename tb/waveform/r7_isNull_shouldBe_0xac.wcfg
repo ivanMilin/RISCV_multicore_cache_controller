@@ -11,19 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="52.241 ns"></ZoomStartTime>
-      <ZoomEndTime time="59.452 ns"></ZoomEndTime>
-      <Cursor1Time time="53.251 ns"></Cursor1Time>
+      <ZoomStartTime time="19.917 ns"></ZoomStartTime>
+      <ZoomEndTime time="92.418 ns"></ZoomEndTime>
+      <Cursor1Time time="32.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="207"></NameColumnWidth>
-      <ValueColumnWidth column_width="100"></ValueColumnWidth>
+      <ValueColumnWidth column_width="96"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="13" />
-   <wvobject fp_name="/Processor_TB/clk" type="logic">
-      <obj_property name="ElementShortName">clk</obj_property>
-      <obj_property name="ObjectShortName">clk</obj_property>
-   </wvobject>
+   <WVObjectSize size="17" />
    <wvobject fp_name="/Processor_TB/reset" type="logic">
       <obj_property name="ElementShortName">reset</obj_property>
       <obj_property name="ObjectShortName">reset</obj_property>
@@ -40,10 +36,6 @@
       <obj_property name="ElementShortName">registerfile[31:0][31:0]</obj_property>
       <obj_property name="ObjectShortName">registerfile[31:0][31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/opcode_in_s" type="array">
-      <obj_property name="ElementShortName">opcode_in_s[6:0]</obj_property>
-      <obj_property name="ObjectShortName">opcode_in_s[6:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/rd_en" type="logic">
       <obj_property name="ElementShortName">rd_en</obj_property>
       <obj_property name="ObjectShortName">rd_en</obj_property>
@@ -57,14 +49,6 @@
       <obj_property name="ElementShortName">cache_hit</obj_property>
       <obj_property name="ObjectShortName">cache_hit</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/stall" type="logic">
-      <obj_property name="ElementShortName">stall</obj_property>
-      <obj_property name="ObjectShortName">stall</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_cache" type="array">
-      <obj_property name="ElementShortName">data_from_cache[31:0]</obj_property>
-      <obj_property name="ObjectShortName">data_from_cache[31:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/rd_en" type="logic">
       <obj_property name="ElementShortName">rd_en</obj_property>
       <obj_property name="ObjectShortName">rd_en</obj_property>
@@ -72,5 +56,38 @@
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/mask" type="array">
       <obj_property name="ElementShortName">mask[2:0]</obj_property>
       <obj_property name="ObjectShortName">mask[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/stall" type="logic">
+      <obj_property name="ElementShortName">stall</obj_property>
+      <obj_property name="ObjectShortName">stall</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/dmem_data_reg" type="array">
+      <obj_property name="ElementShortName">dmem_data_reg[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dmem_data_reg[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/wr_en" type="logic">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/dmem_address" type="array">
+      <obj_property name="ElementShortName">dmem_address[9:0]</obj_property>
+      <obj_property name="ObjectShortName">dmem_address[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/datamemory/rdata" type="array">
+      <obj_property name="ElementShortName">rdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/state" type="array">
+      <obj_property name="ElementShortName">state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">state[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/next_state" type="array">
+      <obj_property name="ElementShortName">next_state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">next_state[1:0]</obj_property>
    </wvobject>
 </wave_config>
