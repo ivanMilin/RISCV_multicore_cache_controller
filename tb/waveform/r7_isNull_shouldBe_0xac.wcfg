@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="16.000 ns"></ZoomStartTime>
-      <ZoomEndTime time="52.851 ns"></ZoomEndTime>
-      <Cursor1Time time="29.500 ns"></Cursor1Time>
+      <ZoomStartTime time="22250fs"></ZoomStartTime>
+      <ZoomEndTime time="42691fs"></ZoomEndTime>
+      <Cursor1Time time="28000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="207"></NameColumnWidth>
-      <ValueColumnWidth column_width="84"></ValueColumnWidth>
+      <ValueColumnWidth column_width="79"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="23" />
+   <WVObjectSize size="27" />
    <wvobject fp_name="/Processor_TB/reset" type="logic">
       <obj_property name="ElementShortName">reset</obj_property>
       <obj_property name="ObjectShortName">reset</obj_property>
@@ -35,7 +35,6 @@
    <wvobject fp_name="/Processor_TB/UUT/rf/registerfile" type="array">
       <obj_property name="ElementShortName">registerfile[31:0][31:0]</obj_property>
       <obj_property name="ObjectShortName">registerfile[31:0][31:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/rd_en" type="logic">
       <obj_property name="ElementShortName">rd_en</obj_property>
@@ -48,6 +47,10 @@
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/cache_hit" type="array">
       <obj_property name="ElementShortName">cache_hit[1:0]</obj_property>
       <obj_property name="ObjectShortName">cache_hit[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/datamemory/memory" type="array">
+      <obj_property name="ElementShortName">memory[1023:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">memory[1023:0][31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/rd_en" type="logic">
       <obj_property name="ElementShortName">rd_en</obj_property>
@@ -64,10 +67,6 @@
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/stall" type="logic">
       <obj_property name="ElementShortName">stall</obj_property>
       <obj_property name="ObjectShortName">stall</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/dmem_data_reg" type="array">
-      <obj_property name="ElementShortName">dmem_data_reg[31:0]</obj_property>
-      <obj_property name="ObjectShortName">dmem_data_reg[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/wr_en" type="logic">
       <obj_property name="ElementShortName">wr_en</obj_property>
@@ -90,9 +89,25 @@
       <obj_property name="ElementShortName">rdata[31:0]</obj_property>
       <obj_property name="ObjectShortName">rdata[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/dmem_rd_en" type="logic">
-      <obj_property name="ElementShortName">dmem_rd_en</obj_property>
-      <obj_property name="ObjectShortName">dmem_rd_en</obj_property>
+   <wvobject fp_name="/Processor_TB/UUT/rf/waddr" type="array">
+      <obj_property name="ElementShortName">waddr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">waddr[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/rf/wdata" type="array">
+      <obj_property name="ElementShortName">wdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">wdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_cache" type="array">
+      <obj_property name="ElementShortName">data_from_cache[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_from_cache[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_dmem" type="array">
+      <obj_property name="ElementShortName">data_from_dmem[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_from_dmem[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/ready_for_reg_flag" type="logic">
+      <obj_property name="ElementShortName">ready_for_reg_flag</obj_property>
+      <obj_property name="ObjectShortName">ready_for_reg_flag</obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/rd_en" type="logic">
       <obj_property name="ElementShortName">rd_en</obj_property>

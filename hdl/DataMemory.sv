@@ -6,7 +6,8 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	always_comb begin
 		//data = 'b0;
 		if (rd_en)
-			data = memory[addr[31:2]];
+			//data = memory[addr[31:2]];
+			data = memory[addr[31:0]];
 		else
 			data = 0;
 	end

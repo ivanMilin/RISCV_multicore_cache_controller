@@ -27,15 +27,38 @@ module cache_subsystem_L1(
     } cache_line_t;
 
     logic [ 1:0] cache_hit;
-    logic [31:0] dmem_data_reg;
+    logic ready_for_reg_flag;
     cache_line_t cache_memory_L1[255:0];
     logic [31:0] data_L1, write_L1, read_L1;
-
+    
+    // CHANGES HERE //
+    logic [9:0] dm_address; 
+    logic [7:0] cache_address;
+    assign dm_address = {tag_in,index_in};
+    assign cache_address = index_in;
+    
+    
     typedef enum logic [1:0] {IDLE, MISS, WAIT_WRITE} state_t;
     state_t state, next_state;
     
     assign dmem_rd_en = (rd_en && cache_hit == 2'b10 && state == MISS);
     assign dmem_wr_en = (wr_en && cache_hit == 2'b10);
+
+    // ====================== CODE LOGIC IS BELOW ======================== // 
+    
+    // Cache hit detection
+    always_comb begin
+        if(opcode_in == 7'b0000011) begin
+            if (cache_memory_L1[index_in[7:2]].valid && cache_memory_L1[index_in[7:2]].tag == tag_in) begin
+                cache_hit = 2'b10;      // HIT 
+            end else begin
+                cache_hit = 2'b01;      // MISS
+            end
+        end      
+        else begin
+            cache_hit = 2'b00;          // NO REQUEST
+        end
+    end
 
     // State machine for cache miss handling
     always_ff @(posedge clk) begin
@@ -52,35 +75,26 @@ module cache_subsystem_L1(
         case (state)
             IDLE: begin
                 if (cache_hit == 2'b01) begin
-                    next_state = MISS;   
+                    next_state = MISS;      // Miss scenario - Next state has to fetch data from current address from data memory
+                    stall = 'b1;
                 end else begin
-                    next_state = IDLE;
+                    next_state = IDLE;      // Hit scenratio - no further action
+                    stall = 'b0;
+                    ready_for_reg_flag = 'b0;
                 end
             end
             MISS: begin
-                stall = 1'b1;
+                ready_for_reg_flag = 'b1;
                 next_state = WAIT_WRITE;  
             end
             WAIT_WRITE: begin
+                ready_for_reg_flag = 'b0;
                 next_state = IDLE; 
             end
       endcase    
     end
-    
-    // Cache hit detection
-    always_comb begin
-        if(opcode_in == 7'b0000011) begin
-            if (cache_memory_L1[index_in[7:2]].valid && cache_memory_L1[index_in[7:2]].tag == tag_in) begin
-                cache_hit = 2'b10;
-            end else begin
-                cache_hit = 2'b01;
-            end
-        end      
-        else begin
-            cache_hit = 2'b00;
-        end
-    end
 
+    // What is the point of this block?
     always_comb begin
         if (rd_en) begin
             data_L1 = cache_memory_L1[index_in[7:2]].data;
@@ -93,7 +107,7 @@ module cache_subsystem_L1(
     // Load instruction based on mask
     always_comb begin
         data_from_cache = 'b0;
-        if (rd_en && cache_hit == 2'b10 && !stall) begin
+        if (rd_en && cache_hit == 2'b10 && stall == 0 && ready_for_reg_flag == 0) begin
             case (mask) 
                 3'b000: begin   // Load byte (Signed)
                     case (index_in[1:0])
@@ -128,6 +142,12 @@ module cache_subsystem_L1(
                 end
             endcase   
         end
+        else if(ready_for_reg_flag == 'b1) begin 
+            data_from_cache = data_from_dmem;
+        end
+        else begin 
+            data_from_cache = 'b0;
+        end 
     end
 
     // Cache write logic (when cache hit)
@@ -164,28 +184,21 @@ module cache_subsystem_L1(
     // On a miss, fetch data from memory and store it in a register
     always_ff @(negedge clk) begin
         if (reset) begin
-            dmem_data_reg <= 'b0;
-            dmem_address <= 'b0;
+            //dmem_data_reg <= 'b0;
+            //dmem_address <= 'b0;
             for(int i = 0; i < 256; i++) begin
                 cache_memory_L1[i] <= '{valid: 0, tag: 'b0, data: 'b0};
             end
         end 
         else begin
-            //dmem_data_reg <= data_from_dmem;
-            
             if (state == IDLE && wr_en) begin    
                 cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: write_L1};
                 data_to_dmem <= write_L1;
-                dmem_address <= {tag_in, index_in};
-            end else if (state == MISS && rd_en) begin
-                //if (dmem_rd_en) begin
-                    dmem_address <= {tag_in, index_in};
-                    dmem_data_reg <= data_from_dmem;
-                //end
+                dmem_address <= dm_address;
+            end else if (/*state == MISS*/ cache_hit == 2'b01 && rd_en) begin
+                dmem_address <= dm_address;
             end else if (state == WAIT_WRITE && rd_en) begin
-                //dmem_address <= {tag_in, index_in};
-                dmem_data_reg <= data_from_dmem;
-                cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: dmem_data_reg};
+                cache_memory_L1[dmem_address[7:0]] <= '{valid: 1, tag: tag_in, data: data_from_dmem};     
             end
         end
     end
