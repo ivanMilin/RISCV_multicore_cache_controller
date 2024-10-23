@@ -30,13 +30,15 @@ module cache_subsystem_L1(
     logic ready_for_reg_flag;
     cache_line_t cache_memory_L1[255:0];
     logic [31:0] data_L1, write_L1, read_L1;
+    logic [31:0] miss_address;
     
     // CHANGES HERE //
     logic [9:0] dm_address; 
     logic [7:0] cache_address;
     assign dm_address = {tag_in,index_in};
+    assign dmem_address = {tag_in,index_in};
     assign cache_address = index_in;
-    
+    assign data_to_dmem = write_L1;
     
     typedef enum logic [1:0] {IDLE, MISS, WAIT_WRITE} state_t;
     state_t state, next_state;
@@ -153,7 +155,7 @@ module cache_subsystem_L1(
     // Cache write logic (when cache hit)
     always_comb begin
         //if (wr_en && cache_hit) begin
-        //write_L1 = 'b0;
+        write_L1 = 'b0;
         if (wr_en) begin
             case (mask)
                 3'b000: begin   // Store byte
@@ -186,6 +188,7 @@ module cache_subsystem_L1(
         if (reset) begin
             //dmem_data_reg <= 'b0;
             //dmem_address <= 'b0;
+            miss_address <= 'b0;
             for(int i = 0; i < 256; i++) begin
                 cache_memory_L1[i] <= '{valid: 0, tag: 'b0, data: 'b0};
             end
@@ -193,12 +196,12 @@ module cache_subsystem_L1(
         else begin
             if (state == IDLE && wr_en) begin    
                 cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: write_L1};
-                data_to_dmem <= write_L1;
-                dmem_address <= dm_address;
-            end else if (/*state == MISS*/ cache_hit == 2'b01 && rd_en) begin
-                dmem_address <= dm_address;
+                
+                //dmem_address <= dm_address;
+            end else if (cache_hit == 2'b01 && rd_en) begin
+                miss_address <= dm_address;
             end else if (state == WAIT_WRITE && rd_en) begin
-                cache_memory_L1[dmem_address[7:0]] <= '{valid: 1, tag: tag_in, data: data_from_dmem};     
+                cache_memory_L1[miss_address[7:0]] <= '{valid: 1, tag: tag_in, data: data_from_dmem};     
             end
         end
     end
