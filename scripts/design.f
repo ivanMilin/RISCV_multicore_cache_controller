@@ -10,6 +10,7 @@
 ../hdl/ALU.sv
 ../hdl/DataMemory.sv
 ../hdl/WriteBack.sv
+../hdl/cache_subsystem_L1.sv
 ../hdl/Processor.sv
 ../verif/reference_model/structs.sv
 ../verif/reference_model/defines.sv 

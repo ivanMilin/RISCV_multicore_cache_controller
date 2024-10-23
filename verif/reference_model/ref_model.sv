@@ -43,6 +43,7 @@ module ref_model
 	logic rd_en_ref_next; 
 	logic wr_en_ref_next; 
 	logic [31:0] address_to_check;
+	logic [31:0] previous_instruction;
 
 	// Program counter signal(PC) - Combinational and clocked value
 	logic [31:0] index_ref;      // PC out
@@ -71,6 +72,9 @@ module ref_model
 	logic [31:0] gb_rs1;
 	logic [31:0] gb_rs2;
 	logic gb_br_taken;
+	logic gb_stall;
+	logic [31:0] gb_miss_address;
+	logic [ 1:0] gb_cache_hit;
 
 	// Free variables
 	logic [31:0] fvar_specific_addr;
@@ -162,7 +166,6 @@ module ref_model
 		Processor.im.instruction[11:7] != 0;
 	endproperty
 
-
 	// Assumptions for free variable to be same during verification process and smaller than memory size limit
 	property assume_fvar_limit;
 		@(posedge clk) disable iff(reset) 
@@ -182,6 +185,18 @@ module ref_model
 	property assume_fvar_stable_neg;
 		@(negedge clk) disable iff(reset) 
 		!reset ##1 fvar_specific_addr_q_neg == fvar_specific_addr;
+	endproperty
+
+	property assume_if_stall_not_null;
+		//gb_stall |-> $stable(Processor.im.instruction);
+		@(posedge clk) disable iff(reset)
+		$rose(gb_stall) |-> $stable(Processor.im.instruction)[*2];    //https://verificationacademy.com/forums/t/assertion-using-stable-with/37547/2
+	endproperty
+
+	property assume_if_stall_not_null_neg;
+		//gb_stall |-> $stable(Processor.im.instruction);
+		@(negedge clk) disable iff(reset)
+		$rose(gb_stall) |-> $stable(Processor.im.instruction)[*2];
 	endproperty
 
 	// Assumptions for instructions - which opcodes will tool feed
@@ -207,12 +222,18 @@ module ref_model
 	asm_fvar_stable          : assume property (assume_fvar_stable);
 	asm_fvar_stable_neg      : assume property (assume_fvar_stable_neg);
 
+	asm_if_stall_not_null    	: assume property (assume_if_stall_not_null);
+	asm_if_stall_not_null_neg   : assume property (assume_if_stall_not_null_neg);
+
 	// Grey box signals assignment
 	assign gb_instruction_ref = Processor.instruction;	
 	assign gb_func7_ref 	  = Processor.instruction[31:25];	
 	assign gb_func3_ref 	  = Processor.instruction[14:12];	
-	assign gb_pc_index 	  = Processor.index;
+	assign gb_pc_index 	  	  = Processor.index;
 	assign gb_pc_index_next   = Processor.next_index;
+	assign gb_stall 	      = Processor.stall;
+	assign gb_miss_address	  = Processor.controller_and_cache.miss_address;
+	assign gb_cache_hit	  	  = Processor.controller_and_cache.gb_cache_hit;
 
 	assign gb_data_to_be_stored_in_dmem = Processor.B_r;
 	assign gb_addr_to_be_stored = Processor.A_r + {Processor.instruction[31:25],Processor.instruction[11:7]};
@@ -385,9 +406,22 @@ module ref_model
 		end 
 		else begin
 			if(valid) begin
-				valid_loaded <= 1'b1;
-				address_from_rf <= Processor.instruction[11:7];
-				data_from_rf_ref <= gb_data_stored_in_rf;
+				if(gb_stall == 'b0) begin
+					valid_loaded <= 1'b1;
+					address_from_rf <= Processor.instruction[11:7];
+					data_from_rf_ref <= gb_data_stored_in_rf;
+				end
+			end
+		end
+	end
+
+	always_ff @(posedge clk) begin
+		if(reset) begin
+			previous_instruction <= 'b0;
+		end 
+		else begin
+			if(Processor.instruction[6:0] == instruction_L_type_opcode) begin
+				previous_instruction <= Processor.instruction;
 			end
 		end
 	end
@@ -474,7 +508,12 @@ module ref_model
 				pc_counter_ref <= pc_counter_ref + gb_imm_branch_ref; 	
 			end
 			else begin
-				pc_counter_ref <= pc_counter_ref + 4;							// R,I,L,S,U - Sequential
+				if(gb_stall == 'b0) begin
+					pc_counter_ref <= pc_counter_ref + 4;							// R,I,L,S,U - Sequential
+				end
+				else begin
+					pc_counter_ref <= pc_counter_ref;
+				end
 			end
 		end
 	end
@@ -794,24 +833,57 @@ module ref_model
 		Processor.index == pc_counter_ref;	
 	endproperty
 
-	// Property that checks if STORE WORD in data memory is correct
+	// Property that checks if STORE WORD in data memory and in cache is correct
 	property check_data_memory_store_word;
-		$rose(known) && ({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15]) % 4 == 0 && Processor.instruction[14:12] == 3'b010 |-> fvar_specific_addr == address_to_check && wdata_ref == rdata_to_check;
+		$rose(known) && ({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15]) % 4 == 0 && Processor.instruction[14:12] == 3'b010 |-> 
+		fvar_specific_addr == address_to_check && wdata_ref == rdata_to_check && 
+		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:0]].data == wdata_ref && 
+		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:0]].tag  == fvar_specific_addr[9:8];
 	endproperty
 	
-	// Property that checks if STORE HALF WORD in data memory is correct
+	// Property that checks if STORE HALF WORD in data memory and in cache is correct
 	property check_data_memory_store_half_word;
-		$rose(known) && ({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15]) % 2 == 0 && Processor.instruction[14:12] == 3'b001 |-> fvar_specific_addr == address_to_check && wdata_ref == rdata_to_check;
+		$rose(known) && ({Processor.im.instruction[31:25],Processor.im.instruction[11:7]} + Processor.im.instruction[19:15]) % 2 == 0 && Processor.instruction[14:12] == 3'b001 |-> 
+		fvar_specific_addr == address_to_check && wdata_ref == rdata_to_check;
+		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:0]].data == wdata_ref && 
+		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:0]].tag  == fvar_specific_addr[9:8];
 	endproperty
 	
-	// Property that checks if STORE BYTE in data memory is correct
+	// Property that checks if STORE BYTE in data memory and in cache is correct
 	property check_data_memory_store_byte;
-		$rose(known) && Processor.instruction[14:12] == 3'b000 |-> fvar_specific_addr == address_to_check && wdata_ref == rdata_to_check;
+		$rose(known) && Processor.instruction[14:12] == 3'b000 |-> 
+		fvar_specific_addr == address_to_check && wdata_ref == rdata_to_check &&
+		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:0]].data == wdata_ref && 
+		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:0]].tag  == fvar_specific_addr[9:8];
 	endproperty
 
 	// Property that checks if LOAD in regiseter file is correct
 	property check_load_in_rf;
 		$rose(valid_loaded) |-> rdata_ref == Processor.rf.registerfile[address_from_rf] ;
+	endproperty
+
+	property check_data_from_dmem_to_cache_if_miss; //posedge
+		$rose(gb_stall) ##2 Processor.controller_and_cache.state == WAIT_WRITE |=> 
+		Processor.controller_and_cache.cache_memory_L1[gb_miss_address[7:0]].valid == 1'b1 &&
+		Processor.controller_and_cache.cache_memory_L1[gb_miss_address[7:0]].tag   == gb_miss_address[9:8] &&
+		Processor.controller_and_cache.cache_memory_L1[gb_miss_address[7:0]].data  == Processor.datamemory.memory[gb_miss_address];  
+	endproperty
+
+	property check_load_hit //posedge
+		Processor.instruction[6:0] == instruction_L_type_opcode && gb_cache_hit == 2'b10 |=>
+		Processor.rf.registerfile[previous_instruction[11:7]] == Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in];		
+	endproperty
+
+	property check_state_transition_IDLE_WAIT_WRITE; //posedge
+		Processor.controller_and_cache.state == IDLE |=> Processor.controller_and_cache.state != WAIT_WRITE;
+	endproperty
+
+	property check_state_transition_MISS_WAIT_WRITE; //posedge
+		Processor.controller_and_cache.state == MISS |=> Processor.controller_and_cache.state == WAIT_WRITE;
+	endproperty
+
+	property check_state_transition_WAIT_WRITE_IDLE; //posedge
+		Processor.controller_and_cache.state == WAIT_WRITE |=> Processor.controller_and_cache.state == IDLE;
 	endproperty
 
 	// Property that checks if values in register file are correct after R and I and U type instruction
@@ -838,6 +910,13 @@ module ref_model
 	assert_check_data_memory_store_word 	 : assert property(@(posedge clk) check_data_memory_store_word);
 	assert_check_data_memory_store_half_word : assert property(@(posedge clk) check_data_memory_store_half_word);
 	assert_check_data_memory_store_byte 	 : assert property(@(posedge clk) check_data_memory_store_byte);
+
+	// ============= CACHE CONTROLLER ASSERTS ============= //
+	assert_check_data_from_dmem_to_cache_if_miss  : assert property(@(posedge clk) check_data_from_dmem_to_cache_if_miss);
+	assert_check_load_hit						  : assert property(@(posedge clk) check_load_hit);
+	assert_check_state_transition_IDLE_WAIT_WRITE : assert property(@(posedge clk) check_state_transition_IDLE_WAIT_WRITE);
+	assert_check_state_transition_MISS_WAIT_WRITE : assert property(@(posedge clk) check_state_transition_MISS_WAIT_WRITE);
+	assert_check_state_transition_WAIT_WRITE_IDLE : assert property(@(posedge clk) check_state_transition_WAIT_WRITE_IDLE);
 
 	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); // Additional cover that helped us work out issues with datamemory
 	
