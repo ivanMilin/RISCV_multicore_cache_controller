@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="23400fs"></ZoomStartTime>
-      <ZoomEndTime time="44041fs"></ZoomEndTime>
-      <Cursor1Time time="32680fs"></Cursor1Time>
+      <ZoomStartTime time="25.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="40.121 ns"></ZoomEndTime>
+      <Cursor1Time time="28.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="204"></NameColumnWidth>
-      <ValueColumnWidth column_width="72"></ValueColumnWidth>
+      <ValueColumnWidth column_width="68"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="30" />
+   <WVObjectSize size="27" />
    <wvobject fp_name="/Processor_TB/reset" type="logic">
       <obj_property name="ElementShortName">reset</obj_property>
       <obj_property name="ObjectShortName">reset</obj_property>
@@ -44,7 +44,6 @@
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/cache_memory_L1" type="array">
       <obj_property name="ElementShortName">cache_memory_L1[255:0]</obj_property>
       <obj_property name="ObjectShortName">cache_memory_L1[255:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/datamemory/memory" type="array">
       <obj_property name="ElementShortName">memory[1023:0][31:0]</obj_property>
@@ -78,18 +77,14 @@
       <obj_property name="ElementShortName">wr_en</obj_property>
       <obj_property name="ObjectShortName">wr_en</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/dmem_address" type="array">
-      <obj_property name="ElementShortName">dmem_address[9:0]</obj_property>
-      <obj_property name="ObjectShortName">dmem_address[9:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/dm_address" type="array">
-      <obj_property name="ElementShortName">dm_address[9:0]</obj_property>
-      <obj_property name="ObjectShortName">dm_address[9:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/index_in" type="array">
       <obj_property name="ElementShortName">index_in[7:0]</obj_property>
       <obj_property name="ObjectShortName">index_in[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/address_in" type="array">
+      <obj_property name="ElementShortName">address_in[9:0]</obj_property>
+      <obj_property name="ObjectShortName">address_in[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/tag_in" type="array">
       <obj_property name="ElementShortName">tag_in[1:0]</obj_property>
@@ -99,25 +94,13 @@
       <obj_property name="ElementShortName">rdata[31:0]</obj_property>
       <obj_property name="ObjectShortName">rdata[31:0]</obj_property>
    </wvobject>
+   <wvobject fp_name="/Processor_TB/opcode_in_s" type="array">
+      <obj_property name="ElementShortName">opcode_in_s[6:0]</obj_property>
+      <obj_property name="ObjectShortName">opcode_in_s[6:0]</obj_property>
+   </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/rf/waddr" type="array">
       <obj_property name="ElementShortName">waddr[4:0]</obj_property>
       <obj_property name="ObjectShortName">waddr[4:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_to_dmem" type="array">
-      <obj_property name="ElementShortName">data_to_dmem[31:0]</obj_property>
-      <obj_property name="ObjectShortName">data_to_dmem[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_cache" type="array">
-      <obj_property name="ElementShortName">data_from_cache[31:0]</obj_property>
-      <obj_property name="ObjectShortName">data_from_cache[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_dmem" type="array">
-      <obj_property name="ElementShortName">data_from_dmem[31:0]</obj_property>
-      <obj_property name="ObjectShortName">data_from_dmem[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/ready_for_reg_flag" type="logic">
-      <obj_property name="ElementShortName">ready_for_reg_flag</obj_property>
-      <obj_property name="ObjectShortName">ready_for_reg_flag</obj_property>
    </wvobject>
    <wvobject fp_name="/Processor_TB/UUT/rd_en" type="logic">
       <obj_property name="ElementShortName">rd_en</obj_property>
@@ -131,16 +114,20 @@
       <obj_property name="ElementShortName">state[1:0]</obj_property>
       <obj_property name="ObjectShortName">state[1:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/next_state" type="array">
-      <obj_property name="ElementShortName">next_state[1:0]</obj_property>
-      <obj_property name="ObjectShortName">next_state[1:0]</obj_property>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_in" type="array">
+      <obj_property name="ElementShortName">data_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_in[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/UUT/im/instruction" type="array">
-      <obj_property name="ElementShortName">instruction[31:0]</obj_property>
-      <obj_property name="ObjectShortName">instruction[31:0]</obj_property>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_in_s" type="array">
+      <obj_property name="ElementShortName">data_in_s[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_in_s[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/Processor_TB/opcode_in_s" type="array">
-      <obj_property name="ElementShortName">opcode_in_s[6:0]</obj_property>
-      <obj_property name="ObjectShortName">opcode_in_s[6:0]</obj_property>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/write_L1" type="array">
+      <obj_property name="ElementShortName">write_L1[31:0]</obj_property>
+      <obj_property name="ObjectShortName">write_L1[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/controller_and_cache/data_from_dmem_in" type="array">
+      <obj_property name="ElementShortName">data_from_dmem_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_from_dmem_in[31:0]</obj_property>
    </wvobject>
 </wave_config>

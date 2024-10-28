@@ -2,6 +2,7 @@
 ../hdl/Add4.sv
 ../hdl/add_immediate.sv
 ../hdl/Mux2.sv
+../hdl/mux2to1.sv
 ../hdl/InstructionMemory.sv
 ../hdl/RegisterFile.sv
 ../hdl/ImmediateGenerator.sv
