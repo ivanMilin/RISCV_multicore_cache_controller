@@ -6,8 +6,8 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	always_comb begin
 		//data = 'b0;
 		if (rd_en)
-			//data = memory[addr[31:2]];
-			data = memory[addr[31:0]];
+			data = memory[addr[31:2]];
+			//data = memory[addr[31:0]];
 		else
 			data = 0;
 	end
@@ -90,7 +90,7 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	always_ff @(negedge clk) begin
 		if(reset) begin
           for (integer i = 0; i < 1024; i = i + 1) begin
-            memory[i] <= i;//32'b0;
+            memory[i] <= 0;//32'b0;
           end
 		end 
 		else begin 

@@ -33,6 +33,8 @@ module cache_subsystem_L1(
     logic [1 : 0] tag_in;
     logic [7 : 0] index_in;
     
+	logic [1:0] test_flag;
+
     assign tag_in           = address_in[9 : 8];
     assign index_in         = address_in[7 : 0];
     assign dmem_address_out = address_in;
@@ -70,7 +72,9 @@ module cache_subsystem_L1(
     always_comb begin
         stall = 1'b0;
         data_in_s = 'b0;
-        
+		next_state = MAIN;        
+		dmem_address_out = 'b0;
+
         case (state)
             MAIN: begin
                 if(opcode_in == 7'b0000011) begin // LOAD
@@ -92,6 +96,7 @@ module cache_subsystem_L1(
                     stall = 'b0;
                 end             
             end
+
             WAIT_WRITE: begin
                 data_in_s = data_from_dmem_in;
                 dmem_address_out = miss_address;
@@ -197,11 +202,11 @@ module cache_subsystem_L1(
     always_ff @(negedge clk) begin
         if(reset) begin
             for(int i = 0; i < 256; i++) begin
-                cache_memory_L1[i] <= '{valid: 0, tag: 'b0, data: 'b0};
+				cache_memory_L1[i] = 0;
             end
-        end
-        begin
-            //if(state == WAIT_WRITE || opcode_in == 7'b0100011) begin
+			test_flag = 2'b11;
+        end 
+		else begin
             if(opcode_in == 7'b0100011) begin
                 cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: write_L1};
             end
