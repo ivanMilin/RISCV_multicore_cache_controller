@@ -37,7 +37,7 @@ module cache_subsystem_L1(
 
     assign tag_in           = address_in[9 : 8];
     assign index_in         = address_in[7 : 0];
-    assign dmem_address_out = address_in;
+    //assign dmem_address_out = address_in;
     
     typedef enum logic [1:0] {MAIN, WAIT_WRITE} state_t;
     state_t state, next_state;
