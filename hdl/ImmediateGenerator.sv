@@ -1,6 +1,9 @@
-module ImmediateGenerator(input logic clk, input logic [31:0] instruction,
-
-						  output logic [31:0] imm_out);
+module ImmediateGenerator
+(
+	input logic clk, 
+	input logic [31:0] instruction,
+	output logic [31:0] imm_out
+);
 	always_comb begin
 		imm_out = 'b0;
 		case (instruction[6:0])

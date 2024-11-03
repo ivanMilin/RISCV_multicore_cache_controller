@@ -1,5 +1,10 @@
-module ALU(input logic [31:0] A, B, input logic [3:0] alu_op,
-           output logic [31:0] C);
+module ALU
+(
+	input logic [31:0] A, B, 
+	input logic [3:0] alu_op,
+	output logic [31:0] C
+);
+
     always_comb begin
 		//C = 'b0;
 		case (alu_op)

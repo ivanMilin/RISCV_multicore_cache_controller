@@ -1,4 +1,5 @@
-module cache_subsystem_L1(
+module cache_subsystem_L1
+(
     input  logic clk,
     input  logic reset,
     input  logic wr_en,
@@ -37,7 +38,6 @@ module cache_subsystem_L1(
 
     assign tag_in           = address_in[9 : 8];
     assign index_in         = address_in[7 : 0];
-    //assign dmem_address_out = address_in;
     
     typedef enum logic [1:0] {MAIN, WAIT_WRITE} state_t;
     state_t state, next_state;
@@ -46,8 +46,6 @@ module cache_subsystem_L1(
     
     // Cache hit detection
     always_comb begin
-        cache_hit = 2'b00;     
-        
         if(opcode_in == 7'b0000011) begin
             if (cache_memory_L1[index_in[7:2]].valid && cache_memory_L1[index_in[7:2]].tag == tag_in) begin
                 cache_hit = 2'b10;      // HIT 
@@ -70,23 +68,23 @@ module cache_subsystem_L1(
     end
     
     always_comb begin
-        stall = 1'b0;
-        data_in_s = 'b0;
-		next_state = MAIN;        
-		dmem_address_out = 'b0;
+    next_state = MAIN;
+	stall = 'b0;
+	data_in_s = 'b0;
+	dmem_address_out = 'b0;
 
         case (state)
             MAIN: begin
-                if(opcode_in == 7'b0000011) begin // LOAD
+                if(opcode_in == 7'b0000011) begin   // LOAD
                     if (cache_hit == 2'b01) begin
-                        next_state = WAIT_WRITE;// Miss scenario - Next state has to fetch data from current address from data memory
+                        next_state = WAIT_WRITE;    // Miss scenario - Next state has to fetch data from current address from data memory
                         stall = 'b1;
                     end else begin
                         next_state = MAIN;      
                         stall = 'b0;
                     end
                 end         
-                else if(opcode_in == 7'b0100011) begin //STORE
+                else if(opcode_in == 7'b0100011) begin  //STORE
                     stall = 'b0;
                     next_state = MAIN;      
                     data_in_s = data_in;
@@ -94,6 +92,8 @@ module cache_subsystem_L1(
                 else begin
                     next_state = MAIN;
                     stall = 'b0;
+                    data_in_s = 'b0;
+		    dmem_address_out = 'b0;
                 end             
             end
 
@@ -156,33 +156,44 @@ module cache_subsystem_L1(
         end
     end
 
-    // Cache STORE logic
+    // Cache STORE logic and also situation when MISS happens store data from DMEM to cache
     always_comb begin
-        //write_L1 = 'b0;
-        //if (wr_en) begin
-            case (mask)
-                3'b000: begin   // Store byte
-                    case (index_in[1:0])
-                        0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFFFF00) | {24'b0, data_in_s[7:0]};
-                        1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF00FF) | {16'b0, data_in_s[7:0], 8'b0};
-                        2: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFF00FFFF) | {8'b0, data_in_s[7:0], 16'b0};
-                        3: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h00FFFFFF) | {data_in_s[7:0], 24'b0};
-                        //default: write_L1 = 0;
-                    endcase
-                end
-                3'b001: begin   // Store halfword
-                    case (index_in[1])
-                        0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF0000) | {16'b0, data_in_s[15:0]};
-                        1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h0000FFFF) | {data_in_s[15:0], 16'b0};
-                        //default: write_L1 = 0;
-                    endcase
-                end
-                3'b010: begin   // Store word
-                    write_L1 = data_in_s;
-                end
-                default: write_L1 = 0;
-            endcase
-        //end 
+        case (mask)
+            3'b000: begin   // Store byte
+                case (index_in[1:0])
+                    0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFFFF00) | {24'b0, data_in_s[7:0]};
+                    1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF00FF) | {16'b0, data_in_s[7:0], 8'b0};
+                    2: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFF00FFFF) | {8'b0, data_in_s[7:0], 16'b0};
+                    3: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h00FFFFFF) | {data_in_s[7:0], 24'b0};
+                    //default: write_L1 = 0;
+                endcase
+            end
+            3'b001: begin   // Store halfword
+                case (index_in[1])
+                    0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF0000) | {16'b0, data_in_s[15:0]};
+                    1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h0000FFFF) | {data_in_s[15:0], 16'b0};
+                    //default: write_L1 = 0;
+                endcase
+            end
+            3'b010: begin   // Store word
+                write_L1 = data_in_s;
+            end
+            3'b100: begin   // Load byte (Unsigned)
+                case (index_in[1:0])
+                    0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFFFF00) | {24'b0, data_in_s[7:0]};
+                    1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF00FF) | {16'b0, data_in_s[7:0], 8'b0};
+                    2: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFF00FFFF) | {8'b0, data_in_s[7:0], 16'b0};
+                    3: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h00FFFFFF) | {data_in_s[7:0], 24'b0};
+                endcase
+            end
+            3'b101: begin   // Load halfword (Unsigned)
+                case (index_in[1])
+                    0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF0000) | {16'b0, data_in_s[15:0]};
+                    1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h0000FFFF) | {data_in_s[15:0], 16'b0};
+                endcase
+            end
+            //default: write_L1 = 0;
+        endcase 
     end
     
     always_ff @(posedge clk) begin
@@ -202,7 +213,7 @@ module cache_subsystem_L1(
     always_ff @(negedge clk) begin
         if(reset) begin
             for(int i = 0; i < 256; i++) begin
-				cache_memory_L1[i] = 0;
+				cache_memory_L1[i] = i+2;
             end
 			test_flag = 2'b11;
         end 

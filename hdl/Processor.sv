@@ -1,4 +1,8 @@
-module Processor(input logic clk, reset);
+module Processor
+(
+    input logic clk, reset
+);
+
     logic [31:0] plus4, next_index, wdata_s, rdata, index, A, B, B_i, A_r, B_r, instruction, alu_out, add_imm_s, data_from_cache_out, data_to_dmem;
     logic [31:0] dmem_address;
     logic [9 :0] dmem_address_out;

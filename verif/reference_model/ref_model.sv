@@ -43,7 +43,8 @@ module ref_model
 	logic rd_en_ref_next; 
 	logic wr_en_ref_next; 
 	logic [31:0] address_to_check;
-	logic [31:0] previous_instruction;
+	logic [31:0] previous_instruction, rf_delayed, cache_delayed, miss_address_s,waddr_s;
+	
 
 	// Program counter signal(PC) - Combinational and clocked value
 	logic [31:0] index_ref;      // PC out
@@ -71,8 +72,8 @@ module ref_model
 	logic [31:0] gb_rd;
 	logic [31:0] gb_rs1;
 	logic [31:0] gb_rs2;
-	logic gb_br_taken;
-	logic gb_stall;
+	logic		 gb_br_taken;
+	logic		 gb_stall;
 	logic [31:0] gb_miss_address;
 	logic [ 1:0] gb_cache_hit;
 
@@ -83,8 +84,8 @@ module ref_model
 
 	// Data memory signals
 	logic [31:0] wdata_ref, wdata_ref_s;
-	logic known;
-	logic valid, valid_loaded;
+	logic		 known;
+	logic 		 valid, valid_loaded;
 	logic [31:0] rdata_to_check, rdata_to_check_seq;
 	logic [31:0] dmem_line;
 
@@ -223,30 +224,30 @@ module ref_model
 	endproperty
 
 	// Assumptions for instructions - which opcodes will tool feed
-	all_types_active            : assume property(assume_opcodes);
-	all_types_active_neg        : assume property(assume_opcodes_neg);
+	all_types_active             : assume property(assume_opcodes);
+	all_types_active_neg         : assume property(assume_opcodes_neg);
 		
 	// Cant load into x0 register
-	load_rs2_not_NULL           : assume property(assume_load_rs2_not_NULL);
-	load_rs2_not_NULL_neg       : assume property(assume_load_rs2_not_NULL_neg);
+	load_rs2_not_NULL            : assume property(assume_load_rs2_not_NULL);
+	load_rs2_not_NULL_neg        : assume property(assume_load_rs2_not_NULL_neg);
 	
 	// Memory size limit - set to 1024
-	store_less_than_1024        : assume property(assume_store_less_than_1024);
-	store_less_than_1024_neg    : assume property(assume_store_less_than_1024_neg);
+	store_less_than_1024         : assume property(assume_store_less_than_1024);
+	store_less_than_1024_neg     : assume property(assume_store_less_than_1024_neg);
 
 	// When R or I type are active, you cant write in the x0 register
-	cant_write_to_x0            : assume property (assume_cant_write_to_x0);
-	cant_write_to_x0_neg        : assume property (assume_cant_write_to_x0_neg);
+	cant_write_to_x0             : assume property (assume_cant_write_to_x0);
+	cant_write_to_x0_neg         : assume property (assume_cant_write_to_x0_neg);
 
 	// Stabilize the free variable and set it accordingly to memory limitations
-	asm_fvar_limit           : assume property(assume_fvar_limit);
-	asm_fvar_limit_neg       : assume property(assume_fvar_limit_neg);
+	asm_fvar_limit           	 : assume property(assume_fvar_limit);
+	asm_fvar_limit_neg       	 : assume property(assume_fvar_limit_neg);
 	
-	asm_fvar_stable          : assume property (assume_fvar_stable);
-	asm_fvar_stable_neg      : assume property (assume_fvar_stable_neg);
+	asm_fvar_stable          	 : assume property (assume_fvar_stable);
+	asm_fvar_stable_neg      	 : assume property (assume_fvar_stable_neg);
 
-	asm_if_stall_not_null	  : assume property (assume_if_stall_not_null);
-	asm_if_stall_not_null_neg : assume property (assume_if_stall_not_null_neg);
+	asm_if_stall_not_null	  	 : assume property (assume_if_stall_not_null);
+	asm_if_stall_not_null_neg 	 : assume property (assume_if_stall_not_null_neg);
 
 	asm_funct3_S_type_opcode     : assume property (assume_funct3_S_type_opcode);
 	asm_funct3_S_type_opcode_neg : assume property (assume_funct3_S_type_opcode_neg);
@@ -281,8 +282,8 @@ module ref_model
 	assign signed_big_immediate_ref   = $signed(big_immediate_ref);
 	
 	
-	assign gb_imm_jump_ref = Processor.B_i;
-	assign gb_br_taken = Processor.br_taken;
+	assign gb_imm_jump_ref   = Processor.B_i;
+	assign gb_br_taken 	     = Processor.br_taken;
 	assign gb_imm_branch_ref = Processor.B_i;
 
 
@@ -497,12 +498,42 @@ module ref_model
 	always_ff @(posedge clk) begin
 		if(reset) begin
 			previous_instruction <= 'b0;
-		end 
+			end 
 		else begin
 			if(Processor.instruction[6:0] == instruction_L_type_opcode) begin
 				previous_instruction <= Processor.instruction;
 			end
 		end
+	end
+	
+	always_ff @(negedge clk) begin
+		if(reset) begin
+			rf_delayed    <= 'b0;
+			cache_delayed <= 'b0;
+		end
+		else begin
+			if(Processor.controller_and_cache.state == WAIT_WRITE) begin
+				rf_delayed    <= Processor.rf.registerfile[Processor.instruction[11:7]];
+				cache_delayed <= Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].data;
+			end 
+		end
+	end
+	
+	always_ff @(negedge clk) begin
+	   if(reset) begin
+	       miss_address_s <= 'b0;
+	       waddr_s        <= 'b0;
+	   end
+	   else begin
+            if(Processor.stall && Processor.controller_and_cache.state == WAIT_WRITE) begin
+                miss_address_s <= Processor.controller_and_cache.index_in;
+                waddr_s        <= Processor.instruction[11:7] ;
+            end      
+            else begin
+                miss_address_s <= miss_address_s;
+                waddr_s        <= waddr_s;
+            end       
+	   end
 	end
 	
 	
@@ -979,14 +1010,6 @@ module ref_model
 		Processor.controller_and_cache.cache_memory_L1[fvar_specific_addr[7:2]].tag  == fvar_specific_addr[9:8];
 	endproperty
 
-
-	property check_data_from_dmem_to_cache_if_miss; //posedge
-		$rose(gb_stall) ##2 Processor.controller_and_cache.state == WAIT_WRITE |=> 
-		Processor.controller_and_cache.cache_memory_L1[gb_miss_address[7:0]].valid == 1'b1 &&
-		Processor.controller_and_cache.cache_memory_L1[gb_miss_address[7:0]].tag   == gb_miss_address[9:8] &&
-		Processor.controller_and_cache.cache_memory_L1[gb_miss_address[7:0]].data  == Processor.datamemory.memory[gb_miss_address];  
-	endproperty
-
 	// ================================================================================================================================================================== // 
 
 	// Property for cache load hit for WORD 
@@ -1081,7 +1104,7 @@ module ref_model
         {{24{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:24]}; 	
 	endproperty	
 
-    // ================================================================================================================================================================== // 
+    	// ================================================================================================================================================================== // 
 
 	// Property for MAIN -> WAIT_WRITE transition
 	property check_state_transition_MAIN_WAIT_WRITE;
@@ -1101,67 +1124,292 @@ module ref_model
 		Processor.rf.registerfile[destination_addr] == result_ref_reg;
 	endproperty
 	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load word when MISS happens (check if the WORD from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_word;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b010 |=> 
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])];
+	endproperty
+	
+	// Property for cache load MISS for WORD (check if the WORD from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_word;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b010 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data == Processor.rf.registerfile[$past(Processor.instruction[11:7])];		
+	endproperty
+	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load half word UPPER when MISS happens SIGNED(check if the HALF WORD UPPER from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_half_word_upper_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b001 && Processor.controller_and_cache.index_in[1] == 1 |=> 
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:16] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][31:16];
+	endproperty
+	
+	// Property for cache load half word LOWER when MISS happens SIGNED(check if the HALF WORD LOWER from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_half_word_lower_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b001 && Processor.controller_and_cache.index_in[1] == 0 |=> 
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:0] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][15:0];
+	endproperty
+	
+	// Property for cache load MISS for HALF WORD UPPER SIGNED (check if the HALF WORD UPPER from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_half_word_upper_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b001 && Processor.controller_and_cache.index_in[1] == 1 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{16{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:16]};		
+	endproperty
+	
+	// Property for cache load MISS for HALF WORD LOWER SIGNED (check if the HALF WORD LOWER from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_half_word_lower_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b001 && Processor.controller_and_cache.index_in[1] == 0 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{16{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:0]};		
+	endproperty
+	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load half word UPPER when MISS happens UNSIGNED(check if the HALF WORD UPPER from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_half_word_upper_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b101 && Processor.controller_and_cache.index_in[1] == 1 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:16] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][31:16];
+	endproperty
+	
+	// Property for cache load half word LOWER when MISS happens UNSIGNED(check if the HALF WORD LOWER from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_half_word_lower_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b101 && Processor.controller_and_cache.index_in[1] == 0 |=> 
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:0] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][15:0];
+	endproperty
+	
+	// Property for cache load MISS for HALF WORD UPPER UNSIGNED (check if the HALF WORD UPPER from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_half_word_upper_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b101 && Processor.controller_and_cache.index_in[1] == 1 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{16{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:16]};		
+	endproperty
+	
+	// Property for cache load MISS for HALF WORD LOWER UNSIGNED (check if the HALF WORD LOWER from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_half_word_lower_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b101 && Processor.controller_and_cache.index_in[1] == 0 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{16{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:0]};		
+	endproperty
+	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load BYTE0 when MISS happens SIGNED(check if the BYTE0 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte0_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b00 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[7:0] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][7:0];
+	endproperty
+	
+	// Property for cache load BYTE1 when MISS happens SIGNED(check if the BYTE1 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte1_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b01 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:8] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][15:8];
+	endproperty
+	
+	// Property for cache load BYTE2 when MISS happens SIGNED(check if the BYTE2 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte2_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b10 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[23:16] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][23:16];
+	endproperty
+	
+	// Property for cache load BYTE3 when MISS happens SIGNED(check if the BYTE3 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte3_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b11 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:24] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][31:24];
+	endproperty
+	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load BYTE0 when MISS happens UNSIGNED(check if the BYTE0 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte0_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b00 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[7:0] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][7:0];
+	endproperty
+	
+	// Property for cache load BYTE1 when MISS happens UNSIGNED(check if the BYTE1 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte1_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b01 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:8] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][15:8];
+	endproperty
+	
+	// Property for cache load BYTE2 when MISS happens UNSIGNED(check if the BYTE2 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte2_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b10 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[23:16] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][23:16];
+	endproperty
+	
+	// Property for cache load BYTE3 when MISS happens UNSIGNED(check if the BYTE3 from DMEM has been written into the cache.data)
+	property check_load_miss_from_dmem_to_cache_byte3_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b11 |=>  
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].tag  == $past(Processor.dmem_address[9:8]) &&
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:24] == Processor.datamemory.memory[$past(Processor.dmem_address[31:2])][31:24];
+	endproperty
+	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load MISS for BYTE0 UNSIGNED (check if the BYTE0 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte0_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b00 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{24'b0,Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[7:0]};		
+	endproperty
+	
+	// Property for cache load MISS for BYTE1 UNSIGNED (check if the BYTE1 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte1_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b01 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{24'b0,Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:8]};		
+	endproperty
+
+	// Property for cache load MISS for BYTE2 UNSIGNED (check if the BYTE2 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte2_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b10 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{24'b0,Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[23:16]};		
+	endproperty
+	
+	// Property for cache load MISS for BYTE3 UNSIGNED (check if the BYTE3 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte3_unsigned;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b100 && Processor.controller_and_cache.index_in[1:0] == 2'b11 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{24'b0,Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:24]};		
+	endproperty	
+	
+	// ================================================================================================================================================================== // 
+	
+	// Property for cache load MISS for BYTE0 SIGNED (check if the BYTE0 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte0_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b00 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{24{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[7]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[7:0]};		
+	endproperty
+	
+	// Property for cache load MISS for BYTE1 SIGNED (check if the BYTE1 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte1_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b01 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{24{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[15:8]};		
+	endproperty
+
+	// Property for cache load MISS for BYTE2 SIGNED (check if the BYTE2 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte2_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b10 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{24{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[23]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[23:16]};		
+	endproperty
+	
+	// Property for cache load MISS for BYTE3 SIGNED (check if the BYTE3 from cache.data has been written into the register file)
+	property check_load_miss_from_cache_to_rf_byte3_signed;
+		Processor.controller_and_cache.state == WAIT_WRITE && Processor.instruction[14:12] == 3'b000 && Processor.controller_and_cache.index_in[1:0] == 2'b11 && gb_stall == 1 ##1 gb_stall == 0 |->
+		Processor.rf.registerfile[$past(Processor.instruction[11:7])] == 
+		{{24{Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31]}},Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].data[31:24]};	
+			
+	endproperty
 	
 	// ===================== ASSERTIONS SECTION ====================== //
  
 	// ============ CONTROLLER ASSERTS =========== //
-	/*ASSERT PASSED */// assert_instruction_R_type_opcode 	   		: assert property(@(posedge clk) check_instruction_R_type_opcode);
-	/*ASSERT PASSED */// assert_instruction_I_type_opcode 	   		: assert property(@(posedge clk) check_instruction_I_type_opcode);
-	/*ASSERT PASSED */// assert_instruction_U_type_opcode 	   		: assert property(@(posedge clk) check_instruction_U_type_opcode);
-	/*ASSERT PASSED */// assert_check_instruction_B_type_opcode     : assert property(@(posedge clk) check_instruction_B_type_opcode);
-	/*ASSERT PASSED */// assert_check_instruction_L_S_type_opcode   : assert property(@(posedge clk) check_instruction_L_S_type_opcode);
-	/*ASSERT PASSED */// assert_check_instruction_J_type_opcode     : assert property(@(posedge clk) check_instruction_J_type_opcode);
+	assert_instruction_R_type_opcode 	   		: assert property(@(posedge clk) check_instruction_R_type_opcode);
+	assert_instruction_I_type_opcode 	   		: assert property(@(posedge clk) check_instruction_I_type_opcode);
+	assert_instruction_U_type_opcode 	   		: assert property(@(posedge clk) check_instruction_U_type_opcode);
+	assert_check_instruction_B_type_opcode     	: assert property(@(posedge clk) check_instruction_B_type_opcode);
+	assert_check_instruction_L_S_type_opcode   	: assert property(@(posedge clk) check_instruction_L_S_type_opcode);
+	assert_check_instruction_J_type_opcode     	: assert property(@(posedge clk) check_instruction_J_type_opcode);
 	
 	// ============= PROGRAM COUNTER ASSERTS ============ //
-	/*ASSERT PASSED */// assert_check_PC    : assert property(@(posedge clk) check_PC);
+	assert_check_PC    : assert property(@(posedge clk) check_PC);
 	
 	// ============= DATA MEMORY ASSERTS ============= //
-	/*ASSERT PASSED *///assert_check_data_memory_store_word 	 		 : assert property(@(posedge clk) check_data_memory_store_word);
-	/*ASSERT PASSED *///assert_check_data_memory_store_half_word_upper   : assert property(@(posedge clk) check_data_memory_store_half_word_upper);
-	/*ASSERT PASSED *///assert_check_data_memory_store_half_word_lower   : assert property(@(posedge clk) check_data_memory_store_half_word_lower);
-	/*ASSERT PASSED *///assert_check_data_memory_store_byte0 	 	  	 : assert property(@(posedge clk) check_data_memory_store_byte0);
-	/*ASSERT PASSED *///assert_check_data_memory_store_byte1 	 	 	 : assert property(@(posedge clk) check_data_memory_store_byte1);
-	/*ASSERT PASSED *///assert_check_data_memory_store_byte2 	 	 	 : assert property(@(posedge clk) check_data_memory_store_byte2);
-	/*ASSERT PASSED *///assert_check_data_memory_store_byte3 	 	 	 : assert property(@(posedge clk) check_data_memory_store_byte3);
+	assert_check_data_memory_store_word 	 		: assert property(@(posedge clk) check_data_memory_store_word);
+	assert_check_data_memory_store_half_word_upper  : assert property(@(posedge clk) check_data_memory_store_half_word_upper);
+	assert_check_data_memory_store_half_word_lower  : assert property(@(posedge clk) check_data_memory_store_half_word_lower);
+	assert_check_data_memory_store_byte0 	 	  	: assert property(@(posedge clk) check_data_memory_store_byte0);
+	assert_check_data_memory_store_byte1 	 	 	: assert property(@(posedge clk) check_data_memory_store_byte1);
+	assert_check_data_memory_store_byte2 	 	 	: assert property(@(posedge clk) check_data_memory_store_byte2);
+	assert_check_data_memory_store_byte3 	 	 	: assert property(@(posedge clk) check_data_memory_store_byte3);
 
 	// ============= CACHE CONTROLLER LOAD ASSERTS ============= //
 	// ------------- Asserts for cache hit scenario ------------ // 
-	//assert_check_data_from_dmem_to_cache_if_miss  : assert property(@(posedge clk) check_data_from_dmem_to_cache_if_miss);
-	/*ASSERT PASSED *///assert_check_load_hit_word						    : assert property(@(negedge clk) check_load_hit_word);
+	
+	assert_check_load_hit_word 				: assert property(@(negedge clk) check_load_hit_word);
 
-    /*ASSERT PASSED */// assert_check_load_hit_half_word_lower_unsigned	    : assert property(@(negedge clk) check_load_hit_half_word_lower_unsigned);
-	/*ASSERT PASSED *///assert_check_load_hit_half_word_upper_unsigned	    : assert property(@(negedge clk) check_load_hit_half_word_upper_unsigned);
+	assert_check_load_hit_half_word_lower_unsigned	    	: assert property(@(negedge clk) check_load_hit_half_word_lower_unsigned);
+	assert_check_load_hit_half_word_upper_unsigned	    	: assert property(@(negedge clk) check_load_hit_half_word_upper_unsigned);
 
-	/*ASSERT PASSED *///assert_check_load_hit_half_word_lower_signed	    : assert property(@(negedge clk) check_load_hit_half_word_lower_signed);
-	/*ASSERT PASSED *///assert_check_load_hit_half_word_upper_signed	    : assert property(@(negedge clk) check_load_hit_half_word_upper_signed);
+	assert_check_load_hit_half_word_lower_signed	    	: assert property(@(negedge clk) check_load_hit_half_word_lower_signed);
+	assert_check_load_hit_half_word_upper_signed	    	: assert property(@(negedge clk) check_load_hit_half_word_upper_signed);
 
-    /*ASSERT PASSED *///assert_check_load_hit_byte0_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte0_unsigned);
-	/*ASSERT PASSED *///assert_check_load_hit_byte1_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte1_unsigned);
-	/*ASSERT PASSED *///assert_check_load_hit_byte2_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte2_unsigned);
-	/*ASSERT PASSED *///assert_check_load_hit_byte3_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte3_unsigned);
+	assert_check_load_hit_byte0_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte0_unsigned);
+	assert_check_load_hit_byte1_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte1_unsigned);
+	assert_check_load_hit_byte2_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte2_unsigned);
+	assert_check_load_hit_byte3_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte3_unsigned);
 
-    /*ASSERT PASSED *///assert_check_load_hit_byte0_signed	    			: assert property(@(negedge clk) check_load_hit_byte0_signed);
-	/*ASSERT PASSED *///assert_check_load_hit_byte1_signed	    			: assert property(@(negedge clk) check_load_hit_byte1_signed);
-	/*ASSERT PASSED *///assert_check_load_hit_byte2_signed	    			: assert property(@(negedge clk) check_load_hit_byte2_signed);
-	/*ASSERT PASSED *///assert_check_load_hit_byte3_signed	    			: assert property(@(negedge clk) check_load_hit_byte3_signed);
+	assert_check_load_hit_byte0_signed	    		: assert property(@(negedge clk) check_load_hit_byte0_signed);
+	assert_check_load_hit_byte1_signed	    		: assert property(@(negedge clk) check_load_hit_byte1_signed);
+	assert_check_load_hit_byte2_signed	    		: assert property(@(negedge clk) check_load_hit_byte2_signed);
+	assert_check_load_hit_byte3_signed	    		: assert property(@(negedge clk) check_load_hit_byte3_signed);
+	
+	// ============= CACHE CONTROLLER LOAD ASSERTS ============= //
+	// ------------- Asserts for cache miss scenario ------------ // 
+	
+	assert_check_load_miss_from_dmem_to_cache_word				: assert property(@(negedge clk) check_load_miss_from_dmem_to_cache_word);
+	assert_check_load_miss_from_cache_to_rf_word				: assert property(@(posedge clk) check_load_miss_from_cache_to_rf_word);
+	
+	assert_check_load_miss_from_dmem_to_cache_half_word_upper_signed	: assert property(@(negedge clk) check_load_miss_from_dmem_to_cache_half_word_upper_signed);
+	assert_check_load_miss_from_dmem_to_cache_half_word_lower_signed	: assert property(@(negedge clk) check_load_miss_from_dmem_to_cache_half_word_lower_signed);
+	assert_check_load_miss_from_cache_to_rf_half_word_upper_signed		: assert property(@(posedge clk) check_load_miss_from_cache_to_rf_half_word_upper_signed);
+	assert_check_load_miss_from_cache_to_rf_half_word_lower_signed		: assert property(@(posedge clk) check_load_miss_from_cache_to_rf_half_word_lower_signed);
+	
+	assert_check_load_miss_from_dmem_to_cache_half_word_upper_unsigned	: assert property(@(negedge clk) check_load_miss_from_dmem_to_cache_half_word_upper_unsigned);
+	assert_check_load_miss_from_dmem_to_cache_half_word_lower_unsigned	: assert property(@(negedge clk) check_load_miss_from_dmem_to_cache_half_word_lower_unsigned);
+	assert_check_load_miss_from_cache_to_rf_half_word_upper_unsigned	: assert property(@(posedge clk) check_load_miss_from_cache_to_rf_half_word_upper_unsigned); //Took a lot of time to prove
+	assert_check_load_miss_from_cache_to_rf_half_word_lower_unsigned	: assert property(@(posedge clk) check_load_miss_from_cache_to_rf_half_word_lower_unsigned); //Took a lot of time to prove
+	
+	assert_check_load_miss_from_dmem_to_cache_byte0_signed   		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte0_signed);
+	assert_check_load_miss_from_dmem_to_cache_byte1_signed   		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte1_signed);
+	assert_check_load_miss_from_dmem_to_cache_byte2_signed   		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte2_signed);
+	assert_check_load_miss_from_dmem_to_cache_byte3_signed   		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte3_signed);
+	
+	assert_check_load_miss_from_dmem_to_cache_byte0_unsigned 		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte0_unsigned);
+	assert_check_load_miss_from_dmem_to_cache_byte1_unsigned 		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte1_unsigned);
+	assert_check_load_miss_from_dmem_to_cache_byte2_unsigned 		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte2_unsigned);
+	assert_check_load_miss_from_dmem_to_cache_byte3_unsigned 		: assert property (@(negedge clk) check_load_miss_from_dmem_to_cache_byte3_unsigned);
+	
+	assert_check_load_miss_from_cache_to_rf_byte0_unsigned   		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte0_unsigned);
+	assert_check_load_miss_from_cache_to_rf_byte1_unsigned   		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte1_unsigned);
+	assert_check_load_miss_from_cache_to_rf_byte2_unsigned   		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte2_unsigned);
+	assert_check_load_miss_from_cache_to_rf_byte3_unsigned   		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte3_unsigned);
+	
+	assert_check_load_miss_from_cache_to_rf_byte0_signed     		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte0_signed);
+	assert_check_load_miss_from_cache_to_rf_byte1_signed     		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte1_signed);
+	assert_check_load_miss_from_cache_to_rf_byte2_signed     		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte2_signed);
+	assert_check_load_miss_from_cache_to_rf_byte3_signed     		: assert property (@(posedge clk) check_load_miss_from_cache_to_rf_byte3_signed);  
+	
 
 	// ============= FSM ASSERTS ============= // 
-	/*ASSERT PASSED *///assert_check_state_transition_MAIN_WAIT_WRITE : assert property(@(posedge clk) check_state_transition_MAIN_WAIT_WRITE);
-	/*ASSERT PASSED *///assert_check_state_transition_WAIT_WRITE_MAIN : assert property(@(posedge clk) check_state_transition_WAIT_WRITE_MAIN);
+	assert_check_state_transition_MAIN_WAIT_WRITE 				: assert property(@(posedge clk) check_state_transition_MAIN_WAIT_WRITE);
+	assert_check_state_transition_WAIT_WRITE_MAIN 				: assert property(@(posedge clk) check_state_transition_WAIT_WRITE_MAIN);
 
 	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); // Additional cover that helped us work out issues with datamemory
 	//cover_dmem_cache_data    : cover property(@(posedge clk) Processor.datamemory.memory[10] == Processor.controller_and_cache.cache_memory_L1[10].data && 
 	//													       Processor.controller_and_cache.cache_memory_L1[10].valid == 1 && 
 	//													       Processor.datamemory.memory[10] != 0);
 
-	
-	// ============= REGISTER FILE ASSERTS ============ //
-	//assert_check_load_in_rf : assert property(@(negedge clk) check_load_in_rf);
-	//cover_check_data_memory  : cover property(@(posedge clk) Processor.datamemory.memory[0] == 5); 
-
 	// ============= REGISTER FILE RESULT CHECK  ASSERTS ================ //
-	/*ASSERT PASSED *///assert_check_rf_R_I_U : assert property(@(posedge clk) check_rf_R_I_U);
+	assert_check_rf_R_I_U : assert property(@(posedge clk) check_rf_R_I_U);
 		
 endmodule
-
-

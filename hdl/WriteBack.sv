@@ -1,5 +1,10 @@
-module WriteBack(input logic [31:0] A, B, C, input logic [1:0] wb_sel,
-				 output logic [31:0] wdata);
+module WriteBack
+(
+	input logic [31:0] A, B, C, 
+	input logic [1:0] wb_sel,
+	output logic [31:0] wdata
+);
+
 	always_comb begin
 		wdata = 'b0;
 		case (wb_sel)

@@ -1,5 +1,11 @@
-module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input logic wr_en, rd_en, clk,reset,
-				  output logic [31:0] rdata);
+module DataMemory
+(
+	input logic [31:0] addr, wdata, 
+	input logic [2:0] mask, 
+	input logic wr_en, rd_en, clk,reset,
+	output logic [31:0] rdata
+);
+
 	logic [31:0] memory [1023:0] ;//= '{default:32'b0};		// 1 KB Memory size
 	logic [31:0] data, write_data,read_data_from_memory;
 
@@ -90,7 +96,7 @@ module DataMemory(input logic [31:0] addr, wdata, input logic [2:0] mask, input 
 	always_ff @(negedge clk) begin
 		if(reset) begin
           for (integer i = 0; i < 1024; i = i + 1) begin
-            memory[i] <= 0;//32'b0;
+            memory[i] <= i+1;//32'b0;
           end
 		end 
 		else begin 

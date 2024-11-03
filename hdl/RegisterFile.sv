@@ -1,4 +1,5 @@
-module RegisterFile(
+module RegisterFile
+(
     input logic clk, reset, reg_wr, 
     input logic [4:0] raddr1, raddr2, waddr, 
     input logic [31:0] wdata,
@@ -14,7 +15,7 @@ module RegisterFile(
     always_ff @(negedge clk) begin
 	if(reset) begin 
         for (integer i = 0; i < 32; i = i + 1) begin
-                registerfile[i] <= 'b0;
+                registerfile[i] <= i;//'b0;
         end
 	end else begin
 		if (reg_wr & (waddr != 0)) begin

@@ -1,4 +1,5 @@
-module mux2to1(
+module mux2to1
+(
     input  logic [31:0] in1,
     input  logic [31:0] in2,
     input  logic [6:0] sel,

@@ -1,10 +1,12 @@
 
-module Controller(
+module Controller
+(
 	input logic [31:0] instruction,
 	output logic [3:0] alu_op, 
 	output logic [2:0] mask, br_type, 
 	output logic reg_wr, sel_A, sel_B, rd_en, wr_en, 
-	output logic [1:0] wb_sel );
+	output logic [1:0] wb_sel 
+);
 	
 	logic [2:0] func3;
 	logic [6:0] func7;
