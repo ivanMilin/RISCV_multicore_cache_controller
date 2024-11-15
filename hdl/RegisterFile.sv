@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module RegisterFile
 (
     input logic clk, reset, reg_wr, 
@@ -15,7 +17,7 @@ module RegisterFile
     always_ff @(negedge clk) begin
 	if(reset) begin 
         for (integer i = 0; i < 32; i = i + 1) begin
-                registerfile[i] <= i;//'b0;
+                registerfile[i] <= 0;//'b0;
         end
 	end else begin
 		if (reg_wr & (waddr != 0)) begin

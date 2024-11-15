@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module WriteBack
 (
 	input logic [31:0] A, B, C, 

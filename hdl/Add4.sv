@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module Add4 
 (
     input stall, reset, 

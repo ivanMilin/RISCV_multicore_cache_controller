@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 
 module Controller
 (
@@ -58,7 +59,7 @@ module Controller
 					3'b010:	alu_op = 2;													  //slti
 					3'b011:	alu_op = 3;													  //sltiu
 					3'b100:	alu_op = 4;													  //xori
-					3'b101: begin if (Processor.instruction[31:25] == 7'b0000010) alu_op = 6; else alu_op = 5; end     				  //srai, srli
+					3'b101: alu_op = (instruction[31:25] == 7'b0000010) ? 6 : 5;    				  //srai, srli
 					3'b110:	alu_op = 7;													  //ori
 					3'b111:	alu_op = 8; 													  //andi
 				endcase

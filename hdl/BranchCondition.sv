@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module BranchCondition
 (
 	input logic [31:0] rs1, rs2, 

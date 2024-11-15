@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module DataMemory
 (
 	input logic [31:0] addr, wdata, 

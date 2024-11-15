@@ -21,26 +21,31 @@ add_files -norecurse ../hdl/BranchCondition.sv
 add_files -norecurse ../hdl/Controller.sv
 add_files -norecurse ../hdl/DataMemory.sv
 add_files -norecurse ../hdl/ImmediateGenerator.sv
-add_files -norecurse ../hdl/InstructionMemory.sv
+add_files -norecurse ../hdl/InstructionMemory1.sv
+add_files -norecurse ../hdl/InstructionMemory2.sv
 add_files -norecurse ../hdl/Mux2.sv
 add_files -norecurse ../hdl/mux2to1.sv
 add_files -norecurse ../hdl/PC.sv
 add_files -norecurse ../hdl/cache_subsystem_L1.sv
 add_files -norecurse ../hdl/RegisterFile.sv
 add_files -norecurse ../hdl/WriteBack.sv
-add_files -norecurse ../hdl/Processor.sv
+add_files -norecurse ../hdl/Processor1.sv
+add_files -norecurse ../hdl/Processor2.sv
+add_files -norecurse ../hdl/bus_controller.sv
+add_files -norecurse ../hdl/top.sv
 
 update_compile_order -fileset sources_1
 add_files -norecurse ../hdl/code.mem
-
+add_files -norecurse ../hdl/ecode.mem
 
 update_compile_order -fileset sources_1
 
 set_property SOURCE_SET sources_1 [get_filesets sim_1]
+set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-mode out_of_context} -objects [get_runs synth_1]
 
 add_files -fileset sim_1 -norecurse ../tb/Processor_TB.sv
 #add_files -fileset sim_1 -norecurse ../tb/controller_TB.sv
-add_files -fileset sim_1 -norecurse ../tb/waveform/r7_isNull_shouldBe_0xac.wcfg
+#add_files -fileset sim_1 -norecurse ../tb/waveform/r7_isNull_shouldBe_0xac.wcfg
 
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1

@@ -1,43 +1,73 @@
+`timescale 1ns / 1ps
+
 module cache_subsystem_L1
 (
-    input  logic clk,
-    input  logic reset,
-    input  logic wr_en,
-    input  logic rd_en,
-    input  logic [6 : 0] opcode_in,
-    input  logic [2 : 0] mask,
-    input logic [31: 0] data_in,
-    input logic [9 : 0] address_in,
+    input logic clk,
+    input logic reset,
+    input logic wr_en,
+    input logic rd_en,
+    input logic grant,
+
+    input logic [ 2:0] mask_in,
+    input logic [ 6:0] opcode_in,
     
+    input logic [31:0] data_in,
+    input logic [31:0] address_in,    
+
+    // data will come from the shared bus
+    input logic [31:0] bus_data_in,
+    input logic [31:0] bus_address_in,
+    input logic [ 1:0] bus_operation_in, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    
+    // data will go to the shared bus
+    output logic [31:0] bus_data_out, 
+    output logic [31:0] bus_address_out,
+    output logic [ 1:0] bus_operation_out,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
+
+    output logic [31:0] data_out,
+    
+    input logic cache_hit_in,  
+    output logic cache_hit_out,  
+    //output logic bus_grant_out,
     output logic stall,
-    input  logic [31: 0] data_from_dmem_in, //loading data from dmem when MISS happens
-    output logic [31: 0] data_from_cache_out,  
-    
-    output logic [9 :0] dmem_address_out
+    output logic req_core,
+    output logic flush_out
 );
 
     typedef struct packed 
     {
-        logic        valid;  
-        logic [1:0]  tag;    
-        logic [31:0] data;   
+        //invalid == 00, exclusive == 01, shared == 10, modified == 11
+        logic [1:0]   mesi_state;  
+        logic [23:0]  tag;    
+        logic [31:0]  data;   
     } cache_line_t;
     
-    cache_line_t cache_memory_L1[255:0];
+    typedef enum logic [1:0] {
+        I = 2'b00,      // Invalid
+        E = 2'b01,      // Exclusive
+        S = 2'b10,      // Shared
+        M = 2'b11       // Modified
+    } mesi_state_t;
+
+
     
-    logic [ 1:0] cache_hit;
+    cache_line_t cache_memory_L1[255:0];
+    mesi_state_t mesi_state, next_mesi_state; //signal for changing state inside of CPU
+    mesi_state_t upgrade_mesi_state;          //signal for changing state recieved from other CPU
+        
+    logic [1:0]   cache_hit;
     logic [31: 0] data_L1, write_L1, read_L1;
     logic [31: 0] data_in_s; //variable get value either from register file or from dmem
     
     logic [31:0] miss_address;
     
-    logic [1 : 0] tag_in;
+    logic [23 : 0] tag_in;
     logic [7 : 0] index_in;
     
 	logic [1:0] test_flag;
 
-    assign tag_in           = address_in[9 : 8];
-    assign index_in         = address_in[7 : 0];
+    assign tag_in   = address_in[31 : 8];
+    assign index_in = address_in[ 7 : 0];
     
     typedef enum logic [1:0] {MAIN, WAIT_WRITE} state_t;
     state_t state, next_state;
@@ -46,24 +76,37 @@ module cache_subsystem_L1
     
     // Cache hit detection
     always_comb begin
+        cache_hit = 'b0;
         if(opcode_in == 7'b0000011) begin
-            if (cache_memory_L1[index_in[7:2]].valid && cache_memory_L1[index_in[7:2]].tag == tag_in) begin
+            if (cache_memory_L1[index_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[index_in[7:2]].tag == tag_in) begin
                 cache_hit = 2'b10;      // HIT 
             end else begin
                 cache_hit = 2'b01;      // MISS
             end
         end      
+        /*
         else begin
             cache_hit = 2'b00;          // NO REQUEST
         end
+        */
     end
+
+    //Logic for sending request to bus
+    always_comb begin
+        req_core = 1'b0;
+        if((opcode_in[6:0] == 7'b0000011 && cache_hit == 2'b01) || opcode_in[6:0] == 7'b0100011) begin
+           req_core = 1'b1;
+        end
+    end 
 
     // State machine for cache miss handling
     always_ff @(posedge clk) begin
         if (reset) begin
             state <= MAIN;
+            mesi_state <= I;
         end else begin
             state <= next_state;
+            mesi_state <= next_mesi_state;
         end
     end
     
@@ -71,7 +114,8 @@ module cache_subsystem_L1
     next_state = MAIN;
 	stall = 'b0;
 	data_in_s = 'b0;
-	dmem_address_out = 'b0;
+	//dmem_address_out = 'b0;
+	//bus_address_out = 'b0;
 
         case (state)
             MAIN: begin
@@ -93,15 +137,22 @@ module cache_subsystem_L1
                     next_state = MAIN;
                     stall = 'b0;
                     data_in_s = 'b0;
-		    dmem_address_out = 'b0;
+		            //address_out = 'b0; // Da li nam ovo ovde treba ?
+                    //bus_address_out = 'b0;
                 end             
             end
 
             WAIT_WRITE: begin
-                data_in_s = data_from_dmem_in;
-                dmem_address_out = miss_address;
+                data_in_s = bus_data_in;
+                //bus_address_out = miss_address;
+                //address_out = miss_address; // Da li nam ovo ovde treba ?
                 stall = 'b1;
-                next_state = MAIN;
+                
+                if(cache_hit == 2'b10) begin
+                    next_state = MAIN;
+                end else begin
+                    next_state = WAIT_WRITE;
+                end
             end
       endcase    
     end
@@ -118,47 +169,170 @@ module cache_subsystem_L1
     
     // LOAD instruction based on mask if HIT happens
     always_comb begin
-        data_from_cache_out = 'b0;
+        data_out = 'b0;
         if (rd_en && cache_hit == 2'b10 && stall == 0) begin
-            case (mask) 
+            case (mask_in) 
                 3'b000: begin   // Load byte (Signed)
                     case (index_in[1:0])
-                        0: data_from_cache_out = {{24{data_L1[7]}},  data_L1[7:0]};
-                        1: data_from_cache_out = {{24{data_L1[15]}}, data_L1[15:8]};
-                        2: data_from_cache_out = {{24{data_L1[23]}}, data_L1[23:16]};
-                        3: data_from_cache_out = {{24{data_L1[31]}}, data_L1[31:24]};
+                        0: data_out = {{24{data_L1[7]}},  data_L1[7:0]};
+                        1: data_out = {{24{data_L1[15]}}, data_L1[15:8]};
+                        2: data_out = {{24{data_L1[23]}}, data_L1[23:16]};
+                        3: data_out = {{24{data_L1[31]}}, data_L1[31:24]};
                     endcase
                 end
                 3'b001: begin   // Load halfword (Signed)
                     case (index_in[1])
-                        0: data_from_cache_out = {{16{data_L1[15]}}, data_L1[15:0]};
-                        1: data_from_cache_out = {{16{data_L1[31]}}, data_L1[31:16]};
+                        0: data_out = {{16{data_L1[15]}}, data_L1[15:0]};
+                        1: data_out = {{16{data_L1[31]}}, data_L1[31:16]};
                     endcase
                 end
                 3'b010: begin   // Load word
-                    data_from_cache_out = data_L1;
+                    data_out = data_L1;
                 end
                 3'b100: begin   // Load byte (Unsigned)
                     case (index_in[1:0])
-                        0: data_from_cache_out = {24'b0, data_L1[7:0]};
-                        1: data_from_cache_out = {24'b0, data_L1[15:8]};
-                        2: data_from_cache_out = {24'b0, data_L1[23:16]};
-                        3: data_from_cache_out = {24'b0, data_L1[31:24]};
+                        0: data_out = {24'b0, data_L1[7:0]};
+                        1: data_out = {24'b0, data_L1[15:8]};
+                        2: data_out = {24'b0, data_L1[23:16]};
+                        3: data_out = {24'b0, data_L1[31:24]};
                     endcase
                 end
                 3'b101: begin   // Load halfword (Unsigned)
                     case (index_in[1])
-                        0: data_from_cache_out = {16'b0, data_L1[15:0]};
-                        1: data_from_cache_out = {16'b0, data_L1[31:16]};
+                        0: data_out = {16'b0, data_L1[15:0]};
+                        1: data_out = {16'b0, data_L1[31:16]};
                     endcase
                 end
             endcase   
         end
     end
+    
+    // Implementation of MESI FSM - processor side
+    //BusRd == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    always_comb begin
+        bus_operation_out = 'b0;  
+        bus_address_out   = 'b0;
+        next_mesi_state = I;
+
+        if(grant) begin
+            case(cache_memory_L1[index_in[7:2]].mesi_state)
+                M: begin
+                    if(opcode_in == 7'b0100011 || opcode_in == 7'b0000011) begin //PrRd/- PrWr/-
+                        next_mesi_state = M;
+                        bus_operation_out = 2'b11;
+                    end
+                end
+                E: begin
+                    if(opcode_in == 7'b0100011) begin //PrWr/-
+                        next_mesi_state = M;
+                        bus_operation_out = 2'b11;
+                    end
+                    else if(opcode_in == 7'b0000011) begin //PrRd/-
+                        next_mesi_state = E;
+                        bus_operation_out = 2'b11;
+                    end
+                end
+                S: begin
+                    if(opcode_in == 7'b0100011) begin        //PrWr/BusUpgr
+                        next_mesi_state = M;
+                        bus_operation_out = 2'b01;      
+                    end
+                    else if(opcode_in == 7'b0000011) begin   //PrRd/-
+                        next_mesi_state = S;
+                        bus_operation_out = 2'b11;
+                    end
+                end
+                I: begin
+                    if(opcode_in == 7'b0000011) begin       //PrRd/BusRd(C) or PrRd/BusRd(#C)
+                        bus_operation_out = 2'b00;
+                        bus_address_out = address_in;
+                        if(cache_hit_in && cache_hit) begin
+                            next_mesi_state = S;
+                        end
+                        else if(!cache_hit_in && cache_hit) begin
+                            next_mesi_state = E;
+                        end
+                    end
+                    else if(opcode_in == 7'b0100011) begin  //PrWr/BusRdX
+                        bus_operation_out = 2'b10;
+                        next_mesi_state = M;
+                    end
+                end
+                default: next_mesi_state = I;
+            endcase
+        end        
+    end
+
+    // Implementation of MESI FSM - bus side
+    //BusRd == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    always_comb begin
+        //next_mesi_state = I;       
+        flush_out = 1'b0;
+        bus_data_out = 'b0;
+        cache_hit_out = 'b0;
+        
+        if(bus_operation_in == 2'b00) begin //BusRd == 2'b00
+            
+            if (cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[bus_address_in[7:2]].tag == tag_in) begin
+                bus_data_out = cache_memory_L1[bus_address_in[7:2]].data;
+                cache_hit_out = 1'b1;
+            end 
+            else begin
+                cache_hit_out = 1'b0;
+            end
+                   
+            case(cache_memory_L1[bus_address_in[7:2]].mesi_state)
+                M: begin
+                    flush_out = 1'b1;
+                    upgrade_mesi_state = S;    
+                end
+                E: begin
+                    flush_out = 1'b1;
+                    upgrade_mesi_state = S; 
+                end
+                S: begin
+                    flush_out = 1'b0;
+                    upgrade_mesi_state = S; 
+                end
+            endcase
+        end
+        else if(bus_operation_in == 2'b10) begin //BusUpgr == 2'b01
+            case(cache_memory_L1[bus_address_in[7:2]].mesi_state)
+                M,E: begin
+                    flush_out = 1'b0;
+                    upgrade_mesi_state = I;    
+                end
+                S: begin
+                    flush_out = 1'b0;
+                    upgrade_mesi_state = I;    
+                end
+            endcase
+        end     
+        else if(bus_operation_in == 2'b01) begin //BusRdX == 2'b10
+            
+            if (cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[bus_address_in[7:2]].tag == tag_in) begin
+                bus_data_out = cache_memory_L1[bus_address_in[7:2]].data;
+                cache_hit_out = 1'b1;
+            end 
+            else begin
+                cache_hit_out = 1'b0;
+            end
+            
+            case(cache_memory_L1[bus_address_in[7:2]].mesi_state)
+                S: begin
+                    flush_out = 1'b0;
+                    upgrade_mesi_state = I; 
+                end
+            endcase
+        end
+    end
+    
+    
+    
 
     // Cache STORE logic and also situation when MISS happens store data from DMEM to cache
     always_comb begin
-        case (mask)
+        case (mask_in)
             3'b000: begin   // Store byte
                 case (index_in[1:0])
                     0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFFFF00) | {24'b0, data_in_s[7:0]};
@@ -213,16 +387,23 @@ module cache_subsystem_L1
     always_ff @(negedge clk) begin
         if(reset) begin
             for(int i = 0; i < 256; i++) begin
-				cache_memory_L1[i] = i+2;
+				cache_memory_L1[i] = 0;
             end
 			test_flag = 2'b11;
         end 
 		else begin
             if(opcode_in == 7'b0100011) begin
-                cache_memory_L1[index_in[7:2]] <= '{valid: 1, tag: tag_in, data: write_L1};
+                cache_memory_L1[index_in[7:2]] <= '{mesi_state: M, tag: tag_in, data: write_L1};
+            end
+            if(opcode_in == 7'b0000011 && state == MAIN && cache_hit == 2'b10) begin
+                //cache_memory_L1[index_in[7:2]].mesi_state <= cache_memory_L1[index_in[7:2]].mesi_state;
+                cache_memory_L1[index_in[7:2]].mesi_state <= next_mesi_state;
             end
             else if(state == WAIT_WRITE) begin
-                cache_memory_L1[miss_address[7:2]] <= '{valid: 1, tag: tag_in, data: write_L1};                
+                cache_memory_L1[miss_address[7:2]] <= '{mesi_state: next_mesi_state, tag: tag_in, data: write_L1};                
+            end
+            else if(bus_operation_in != 2'b11) begin
+                cache_memory_L1[bus_address_in[7:2]] <= '{mesi_state: upgrade_mesi_state, tag: bus_address_in[31:8], data: bus_data_in}; 
             end
         end
     end
