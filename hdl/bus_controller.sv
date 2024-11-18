@@ -39,7 +39,7 @@ module bus_controller
 
     logic grant_core_toggle, grant_core_toggle_next;
 
-    always_ff @(negedge clk) begin
+    always_ff @(posedge clk) begin
         if (reset) begin
             grant_core_toggle <= 1'b0;
         end else begin
@@ -72,23 +72,26 @@ module bus_controller
     always_comb begin
         bus_data_out1      = 'b0;
         bus_address_out1   = 'b0;
-        bus_operation_out1 = 'b0;
+        bus_operation_out1 = 2'b11;
+        //bus_operation_out1 = 'b0;
     
         bus_data_out2       = 'b0;
         bus_address_out2    = 'b0;
-        bus_operation_out2  = 'b0;
+        bus_operation_out2  = 2'b11;
+        //bus_operation_out2 = 'b0;
         
         cache_hit_out1 = 'b0;
         cache_hit_out2 = 'b0;
         
         ////BusRd == 2'b00, BusUpgr == 2'b01, BusRdX == 2'b10
         if(req_core1) begin
-            if(bus_operation_in1 == 2'b00 || bus_operation_in1 == 2'b10) begin
+            if((bus_operation_in1 == 2'b00 || bus_operation_in1 == 2'b10) && grant_core1) begin
                 bus_operation_out2 = bus_operation_in1;
                 bus_address_out2   = bus_address_in1;
                 
                 if(cache_hit_in2) begin
-                    bus_data_out1 = bus_data_in2;   
+                    bus_data_out1 = bus_data_in2;
+                    //bus_data_out2 = bus_data_in2;   
                     cache_hit_out1 = cache_hit_in2; 
                 end 
                 else begin
@@ -97,11 +100,12 @@ module bus_controller
             end
         end 
         else if (req_core2) begin
-            if(bus_operation_in2 == 2'b00 || bus_operation_in2 == 2'b10) begin
+            if((bus_operation_in2 == 2'b00 || bus_operation_in2 == 2'b10) && grant_core2) begin
                 bus_operation_out1 = bus_operation_in2;
                 bus_address_out1   = bus_address_in2;
                 
                 if(cache_hit_in1) begin
+                    //bus_data_out1 = bus_data_in1;
                     bus_data_out2 = bus_data_in1;
                     cache_hit_out2 = cache_hit_in1;
                 end 

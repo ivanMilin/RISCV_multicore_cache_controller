@@ -20,7 +20,8 @@ module top
     logic req_core1, req_core2;
     logic flush_in1, flush_in2;
     
-    Processor1 cpu1
+    Processor # (.file_cpu(1))
+    cpu1 
     (
         .clk(clk), 
         .reset(reset),
@@ -77,8 +78,9 @@ module top
         .flush_in1(flush_in1),
         .flush_in2(flush_in2)
     );
-    //Processor #(.FILE_NAME("code.mem")) cpu2(
-    Processor2 cpu2
+    
+    Processor # (.file_cpu(2))
+    cpu2
     (
         .clk(clk), 
         .reset(reset),

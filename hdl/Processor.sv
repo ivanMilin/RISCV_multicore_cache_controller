@@ -1,6 +1,9 @@
 `timescale 1ns / 1ps
 
-module Processor2
+module Processor #
+(
+    parameter integer file_cpu = 1
+)
 (
     input logic clk, 
     input logic reset,
@@ -36,7 +39,7 @@ module Processor2
     add_immediate add_imm(.in1(index), .in2(B_i), .out(add_imm_s));
     Mux2 select_PC (.A(plus4), .B(add_imm_s), .sel(br_taken), .C(next_index));
     
-    InstructionMemory2 im(.addr(index), .instruction(instruction));
+    InstructionMemory #(.file_cpu(file_cpu)) im(.addr(index), .instruction(instruction));
 
     RegisterFile rf (.clk(clk), .reset(reset), .reg_wr(reg_wr), .raddr1(instruction[19:15]), .raddr2(instruction[24:20]), .waddr(instruction[11:7]), .wdata(wdata_s), .rdata1(A_r), .rdata2(B_r));
     ImmediateGenerator ig (.clk(clk), .instruction(instruction), .imm_out(B_i));
