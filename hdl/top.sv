@@ -137,6 +137,7 @@ module top
         .opcode_in(opcode_from_bus),
         //.bus_operation_in(),
         
+        .data_from_dmem(0),
         .bus_data_in(data_to_L2),
         .bus_address_in(address_to_L2),
         

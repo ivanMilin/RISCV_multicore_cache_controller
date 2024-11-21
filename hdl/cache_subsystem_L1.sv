@@ -215,8 +215,9 @@ module cache_subsystem_L1
     always_comb begin
         bus_operation_out = 2'b11;
         bus_address_out   = 'b0;
-        bus_data_out      = 'b0;
+        //bus_data_out      = 'b0;
         next_mesi_state   = I;
+        data_to_L2 = 'b0;
 
         if(grant) begin
             case(cache_memory_L1[index_in[7:2]].mesi_state)
