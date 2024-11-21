@@ -25,6 +25,7 @@ module cache_subsystem_L1
     output logic [ 1:0] bus_operation_out,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
 
     output logic [31:0] data_out,
+    output logic [31:0] data_to_L2,
     
     input logic cache_hit_in,  
     output logic cache_hit_out,  
@@ -64,8 +65,6 @@ module cache_subsystem_L1
     
     logic [23 : 0] tag_in;
     logic [7 : 0] index_in;
-    
-	logic [1:0] test_flag;
 
     assign tag_in   = address_in[31 : 8];
     assign index_in = address_in[ 7 : 0];
@@ -216,7 +215,8 @@ module cache_subsystem_L1
     always_comb begin
         bus_operation_out = 2'b11;
         bus_address_out   = 'b0;
-        next_mesi_state = I;
+        bus_data_out      = 'b0;
+        next_mesi_state   = I;
 
         if(grant) begin
             case(cache_memory_L1[index_in[7:2]].mesi_state)
@@ -238,8 +238,11 @@ module cache_subsystem_L1
                 end
                 S: begin
                     if(opcode_in == 7'b0100011) begin        //PrWr/BusUpgr
-                        next_mesi_state = M;
-                        bus_operation_out = 2'b01;      
+                        bus_operation_out = 2'b01;
+                        // THIS IS CHANGED // 
+                        data_to_L2 = write_L1;
+                        bus_address_out = address_in; 
+                        next_mesi_state = M;     
                     end
                     else if(opcode_in == 7'b0000011) begin   //PrRd/-
                         next_mesi_state = S;
@@ -259,7 +262,10 @@ module cache_subsystem_L1
                     end
                     else if(opcode_in == 7'b0100011) begin  //PrWr/BusRdX
                         bus_operation_out = 2'b10;
-                        next_mesi_state = M;
+                        // THIS IS CHANGED // 
+                        data_to_L2 = write_L1;
+                        bus_address_out = address_in;
+                        next_mesi_state = M; 
                     end
                 end
                 default: next_mesi_state = I;
@@ -340,8 +346,6 @@ module cache_subsystem_L1
         end
     end
     
-    
-    
 
     // Cache STORE logic and also situation when MISS happens store data from DMEM to cache
     always_comb begin
@@ -403,7 +407,6 @@ module cache_subsystem_L1
             for(int i = 0; i < 256; i++) begin
 				cache_memory_L1[i] = 0;
             end
-			test_flag = 2'b11;
         end 
 		else begin
             if(opcode_in == 7'b0100011 && grant) begin

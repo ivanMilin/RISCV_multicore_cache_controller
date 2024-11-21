@@ -104,19 +104,20 @@ module cache_subsystem_L2(
             end
         end 
         else begin
-            //STORE WORD
+            //STORE WORD - ADD LOGIC FOR SAME TAG STORE - IF bus_addres_in[31:10] and cache_memory_L2[way0_line].tag are same 
+            //             new data stores in L2, and previous moves to data memory. Add this also in way1 segment.
             if (opcode_in == 7'b0100011) begin
-                if (bus_address_in[9] == 1'b0) begin
+                if (bus_address_in[0] == 1'b1) begin
                     cache_memory_L2[way0_line].lru  <= 0;               // Mark Way 0 as recently used
                     cache_memory_L2[way1_line].lru  <= 1;               // Mark Way 1 as least recently used
                     cache_memory_L2[way0_line].data <= bus_data_in;
-                    cache_memory_L2[way0_line].tag  <= bus_address_in[31:9];
+                    cache_memory_L2[way0_line].tag  <= bus_address_in[31:10];
                 end
-                if (bus_address_in[9] == 1'b1) begin
+                if (bus_address_in[0] == 1'b0) begin
                     cache_memory_L2[way0_line].lru   <= 1;              // Mark Way 1 as recently used
                     cache_memory_L2[way1_line].lru   <= 0;              // Mark Way 0 as least recently used
                     cache_memory_L2[way1_line].data  <= bus_data_in;
-                    cache_memory_L2[way0_line].tag   <= bus_address_in[31:9];
+                    cache_memory_L2[way0_line].tag   <= bus_address_in[31:10];
                 end
             end
             //In case of LOAD MISS scenario 

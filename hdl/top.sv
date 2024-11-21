@@ -6,7 +6,7 @@ module top
     input logic reset
 );
     logic [31:0] bus_data_in1, bus_address_in1;
-    logic [1:0] bus_operation_in1, bus_operation_in2;
+    logic [ 1:0] bus_operation_in1, bus_operation_in2;
     logic [31:0] bus_data_in2, bus_address_in2; 
 
     logic [31:0] bus_data_out1, bus_address_out1;
@@ -21,7 +21,8 @@ module top
     logic req_core1, req_core2;
     logic flush_in1, flush_in2;
     
-    logic [31:0] data_from_L2, address_to_L2;
+    logic [31:0] data_to_L2_1 , data_to_L2_2, data_to_L2_s;
+    logic [31:0] data_from_L2, address_to_L2, data_to_L2;
     logic [1:0] cache_hit_L2;
     
     Processor # (.file_cpu(1))
@@ -37,6 +38,8 @@ module top
         .bus_data_out(bus_data_out1),
         .bus_address_out(bus_address_out1),
         .bus_operation_out(bus_operation_out1),
+        
+        .data_to_L2(data_to_L2_1),
         
         .cache_hit_in(cache_hit_in1),
         .cache_hit_out(cache_hit_out1),
@@ -73,6 +76,8 @@ module top
         //------------------------------------------------
         .data_from_L2(data_from_L2), 
         .address_to_L2(address_to_L2),
+        .data_to_L2_input(data_to_L2_s),
+        .data_to_L2_out(data_to_L2),
         //------------------------------------------------
         .data_from_dmem(), 
         .address_to_dmem(),
@@ -110,6 +115,8 @@ module top
         .bus_address_out(bus_address_out2),
         .bus_operation_out(bus_operation_out2),
         
+        .data_to_L2(data_to_L2_2),
+        
         .cache_hit_in(cache_hit_in2),
         .cache_hit_out(cache_hit_out2),
         
@@ -120,14 +127,7 @@ module top
     );
     
     cache_subsystem_L2 cache_L2
-    (
-    /*
-      
-      da li nam iz bus controllera dovoljno samo jedan zajednicki bus_operation_out 
-      ili cemo i tu morati da miskamo da opet od onog koji salje zahtev od njega uzmi bus_operation? 
-      sta sa flush ???
-    */
-    
+    (    
         .clk(clk),
         .reset(reset),
         .wr_en(wr_en),
@@ -137,7 +137,7 @@ module top
         .opcode_in(opcode_from_bus),
         //.bus_operation_in(),
         
-        .bus_data_in(0),
+        .bus_data_in(data_to_L2),
         .bus_address_in(address_to_L2),
         
         .data_from_L2(data_from_L2),
@@ -146,4 +146,14 @@ module top
     
         .cache_hit_out(cache_hit_L2)
     );
+    
+    always_comb begin 
+    data_to_L2_s = 'b0;
+        if(req_core1 && grant_core1) begin 
+            data_to_L2_s = data_to_L2_1;
+        end 
+        else if(req_core2 && grant_core2) begin 
+            data_to_L2_s = data_to_L2_2;
+        end
+    end
 endmodule

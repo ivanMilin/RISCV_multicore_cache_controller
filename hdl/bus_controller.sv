@@ -24,10 +24,12 @@ module bus_controller
     output logic [31:0] bus_address_out2,
     output logic [ 1:0] bus_operation_out2, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
     //------------------------------------------------
-    input logic [31:0] data_from_L2, 
+    input  logic [31:0] data_from_L2,
+    input  logic [31:0] data_to_L2_input, 
+    output logic [31:0] data_to_L2_out,
     output logic [31:0] address_to_L2,
     //------------------------------------------------
-    input logic  [31:0] data_from_dmem, 
+    input  logic [31:0] data_from_dmem, 
     output logic [31:0] address_to_dmem,
     //------------------------------------------------
     input logic cache_hit_in1,
@@ -100,11 +102,12 @@ module bus_controller
         
         ////BusRd == 2'b00, BusUpgr == 2'b01, BusRdX == 2'b10
         if(req_core1) begin
-            if((bus_operation_in1 == 2'b00 || bus_operation_in1 == 2'b10) && grant_core1) begin
-                bus_operation_out2 = bus_operation_in1;
-                bus_address_out2   = bus_address_in1;
-                address_to_L2      = bus_address_in1;
-                opcode_out         = opcode_in1;   
+            if(bus_operation_in1 != 2'b11 && grant_core1) begin
+                bus_operation_out2    = bus_operation_in1;
+                bus_address_out2      = bus_address_in1;
+                address_to_L2         = bus_address_in1;
+                data_to_L2_out        = data_to_L2_input;
+                opcode_out            = opcode_in1;   
                 
                 if(cache_hit_in2) begin
                     bus_data_out1 = bus_data_in2;
@@ -126,11 +129,12 @@ module bus_controller
             end
         end 
         else if (req_core2) begin
-            if((bus_operation_in2 == 2'b00 || bus_operation_in2 == 2'b10) && grant_core2) begin
-                bus_operation_out1 = bus_operation_in2;
-                bus_address_out1   = bus_address_in2;
-                address_to_L2      = bus_address_in2;
-                opcode_out         = opcode_in2;
+            if(bus_operation_in2 != 2'b11 && grant_core2) begin
+                bus_operation_out1    = bus_operation_in2;
+                bus_address_out1      = bus_address_in2;
+                address_to_L2         = bus_address_in2;
+                data_to_L2_out        = data_to_L2_input;
+                opcode_out            = opcode_in2;
                 
                 if(cache_hit_in1) begin
                     //bus_data_out1 = bus_data_in1;
