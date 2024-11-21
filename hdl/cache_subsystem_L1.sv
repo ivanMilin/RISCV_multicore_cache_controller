@@ -31,7 +31,8 @@ module cache_subsystem_L1
     //output logic bus_grant_out,
     output logic stall,
     output logic req_core,
-    output logic flush_out
+    output logic flush_out,
+    output logic [6:0] opcode_out
 );
 
     typedef struct packed 
@@ -93,9 +94,12 @@ module cache_subsystem_L1
 
     //Logic for sending request to bus
     always_comb begin
-        req_core = 1'b0;
+        req_core   = 1'b0;
+        opcode_out = 'b0;
+        
         if((opcode_in[6:0] == 7'b0000011 && cache_hit == 2'b01) || opcode_in[6:0] == 7'b0100011) begin
            req_core = 1'b1;
+           opcode_out = opcode_in[6:0];
         end
     end 
 

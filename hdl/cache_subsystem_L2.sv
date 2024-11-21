@@ -7,19 +7,19 @@ module cache_subsystem_L2(
     input  logic reset,
     input  logic wr_en,
     input  logic rd_en,
+    input  logic flush,
     
     input logic [ 6:0] opcode_in,
-    input logic [ 1:0] bus_operation_in1,
+    //input logic [ 1:0] bus_operation_in,
     
+    input  logic [31:0] data_from_dmem,
     input  logic [31:0] bus_data_in,
     input  logic [31:0] bus_address_in,
     
-    input  logic [31:0] data_from_dmem,
-    
-    output  logic [31:0] bus_data_out,
+    output  logic [31:0] data_from_L2,
     output  logic [31:0] bus_address_out,
 
-    output logic cache_hit_out
+    output  logic [1:0] cache_hit_out
 );
 
     typedef struct packed {
@@ -29,66 +29,82 @@ module cache_subsystem_L2(
         logic [31:0] data;
     } cache_line_t;
 
-    cache_line_t cache_memory_L2[1024:0];
+    cache_line_t cache_memory_L2[1023:0];
 
     logic way0_hit, way1_hit;  
-    logic way0_line, way1_line; 
+    logic [31:0] way0_line, way1_line; 
 
+    assign way0_line = (bus_address_in >> 2);// & 9'b111111111;
+    assign way1_line = (bus_address_in >> 2) + 1;
+
+    /*
+    always_comb begin
+        if(bus_address_in < 256) begin
+            way0_line = bus_address_in[9:2];
+            way1_line = bus_address_in[9:2]+1;
+        end 
+        else begin
+            way0_line = {bus_address_in[8:0],1'b0};
+            way1_line = {bus_address_in[8:0],1'b1};
+        end
+    end
+    */
+    
     // Cache LOAD HIT/MISS detection
     always_comb begin
         way0_hit = 1'b0;
         way1_hit = 1'b0;
         cache_hit_out = 'b0; 
-  
-        way0_line = (bus_address_in[8:2] * 2);
-        way1_line = (bus_address_in[8:2] * 2) + 1;
+        data_from_L2 = 'b0;
 
         if(opcode_in == 7'b0000011) begin
-            if(cache_memory_L2[way0_line].valid && (cache_memory_L2[way0_line].tag == bus_address_in[31:9])) begin
+            if(cache_memory_L2[way0_line].valid && (cache_memory_L2[way0_line].tag == bus_address_in[31:10])) begin
                 way0_hit = 1'b1;
-                cache_hit_out = 2'b10; 
+                way1_hit = 1'b0; 
+                cache_hit_out = 2'b10;
+                data_from_L2 = cache_memory_L2[way0_line].data;
             end
-            else if(cache_memory_L2[way1_line].valid && (cache_memory_L2[way1_line].tag == bus_address_in[31:9]))begin
-                way1_hit = 1'b1;
-                cache_hit_out = 2'b10; 
+            else if(cache_memory_L2[way1_line].valid && (cache_memory_L2[way1_line].tag == bus_address_in[31:10]))begin
+                way0_hit = 1'b0;
+                way1_hit = 1'b1; 
+                cache_hit_out = 2'b10;
+                data_from_L2 = cache_memory_L2[way1_line].data;
             end
             else begin
+                way0_hit = 1'b0;
+                way1_hit = 1'b0;
                 cache_hit_out = 2'b01;
+                data_from_L2 = 'b0;
             end
-        end   
+        end
+        /*   
         else begin             
             way0_hit = 1'b0;
             way1_hit = 1'b0;
             cache_hit_out = 'b0;
-        end                  
+        end
+        */                  
     end
-
-    //Reading data from L2 if hit happens
-    always_comb begin
-        bus_data_out = 'b0;
-        
-        if(way0_hit) begin
-            bus_data_out = cache_memory_L2[way0_line].data;
-        end
-        else if(way1_hit)begin
-            bus_data_out = cache_memory_L2[way1_line].data;
-        end
-        else begin
-            bus_data_out = 'b0;
-        end
-    end
-
+    
     always_ff @(negedge clk) begin
         if (reset) begin
-            for (int i = 0; i < 1024; i ++) begin
-                cache_memory_L2[i].valid <= 0;
-                cache_memory_L2[i].lru   <= 0;
-                cache_memory_L2[i].tag   <= 'b0;
-                cache_memory_L2[i].data  <= 'b0;
+            for (integer i = 0; i < 1024; i++) begin
+                if(i == 255) begin
+                    cache_memory_L2[i].valid <= 1;
+                    cache_memory_L2[i].lru   <= 0;
+                    cache_memory_L2[i].tag   <= 0;//'b0;
+                    cache_memory_L2[i].data  <= i;//'b0;
+                end
+                else begin
+                    cache_memory_L2[i].valid <= 1;
+                    cache_memory_L2[i].lru   <= 0;
+                    cache_memory_L2[i].tag   <= 2;//'b0;
+                    cache_memory_L2[i].data  <= i;//'b0;
+                end
             end
         end 
         else begin
-            //STORE
+            //STORE WORD
             if (opcode_in == 7'b0100011) begin
                 if (bus_address_in[9] == 1'b0) begin
                     cache_memory_L2[way0_line].lru  <= 0;               // Mark Way 0 as recently used

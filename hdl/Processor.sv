@@ -22,7 +22,8 @@ module Processor #
 
     input  logic grant,
     output logic req_core,    
-    output logic flush_out
+    output logic flush_out,
+    output logic [6:0] opcode_out
 );
 
     logic [31:0] plus4, next_index, wdata_s, rdata, index, A, B, B_i, A_r, B_r, instruction, alu_out, add_imm_s, data_out;
@@ -41,7 +42,7 @@ module Processor #
     
     InstructionMemory #(.file_cpu(file_cpu)) im(.addr(index), .instruction(instruction));
 
-    RegisterFile rf (.clk(clk), .reset(reset), .reg_wr(reg_wr), .raddr1(instruction[19:15]), .raddr2(instruction[24:20]), .waddr(instruction[11:7]), .wdata(wdata_s), .rdata1(A_r), .rdata2(B_r));
+    RegisterFile rf (.clk(clk), .reset(reset), .reg_wr(reg_wr && !stall), .raddr1(instruction[19:15]), .raddr2(instruction[24:20]), .waddr(instruction[11:7]), .wdata(wdata_s), .rdata1(A_r), .rdata2(B_r));
     ImmediateGenerator ig (.clk(clk), .instruction(instruction), .imm_out(B_i));
 
     Mux2 select_A (.A(index), .B(A_r), .sel(sel_A), .C(A));
@@ -55,7 +56,8 @@ module Processor #
        (.clk(clk), .reset(reset), .wr_en(wr_en), .rd_en(rd_en), .grant(grant), .mask_in(mask), .opcode_in(instruction[6:0]), .data_in(B_r), .address_in(alu_out), 
         .bus_data_in(bus_data_in),  .bus_address_in(bus_address_in),   .bus_operation_in(bus_operation_in), 
         .bus_data_out(bus_data_out), .bus_address_out(bus_address_out), .bus_operation_out(bus_operation_out),
-        .data_out(data_out), .cache_hit_in(cache_hit_in), .cache_hit_out(cache_hit_out), .stall(stall), .req_core(req_core), .flush_out(flush_out));
+        .data_out(data_out), .cache_hit_in(cache_hit_in), .cache_hit_out(cache_hit_out), .stall(stall), 
+        .req_core(req_core), .flush_out(flush_out), .opcode_out(opcode_out));
         
     WriteBack writeback (.A(alu_out), .B(data_out), .C(index), .wb_sel(wb_sel), .wdata(wdata_s));
 

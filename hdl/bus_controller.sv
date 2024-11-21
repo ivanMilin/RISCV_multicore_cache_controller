@@ -24,17 +24,29 @@ module bus_controller
     output logic [31:0] bus_address_out2,
     output logic [ 1:0] bus_operation_out2, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
     //------------------------------------------------
+    input logic [31:0] data_from_L2, 
+    output logic [31:0] address_to_L2,
+    //------------------------------------------------
+    input logic  [31:0] data_from_dmem, 
+    output logic [31:0] address_to_dmem,
+    //------------------------------------------------
     input logic cache_hit_in1,
     input logic cache_hit_in2,
     
     output logic cache_hit_out1,
     output logic cache_hit_out2,  
     //------------------------------------------------
+    input logic [1:0] cache_hit_L2,
+    //------------------------------------------------
     input logic req_core1,    
     input logic req_core2,
     
     input logic flush_in1,
-    input logic flush_in2
+    input logic flush_in2,
+    
+    input logic  [6:0] opcode_in1, 
+    input logic  [6:0] opcode_in2,
+    output logic [6:0] opcode_out
 );
 
     logic grant_core_toggle, grant_core_toggle_next;
@@ -63,7 +75,8 @@ module bus_controller
                 grant_core2 = 1'b0;
                 grant_core_toggle_next = ~grant_core_toggle;
             end
-        end else begin
+        end 
+        else begin
             grant_core1 = 1'b1;
             grant_core2 = 1'b1;
         end
@@ -82,20 +95,33 @@ module bus_controller
         
         cache_hit_out1 = 'b0;
         cache_hit_out2 = 'b0;
+        opcode_out     = 'b0;
+        address_to_L2  = 'b0;
         
         ////BusRd == 2'b00, BusUpgr == 2'b01, BusRdX == 2'b10
         if(req_core1) begin
             if((bus_operation_in1 == 2'b00 || bus_operation_in1 == 2'b10) && grant_core1) begin
                 bus_operation_out2 = bus_operation_in1;
                 bus_address_out2   = bus_address_in1;
+                address_to_L2      = bus_address_in1;
+                opcode_out         = opcode_in1;   
                 
                 if(cache_hit_in2) begin
                     bus_data_out1 = bus_data_in2;
                     //bus_data_out2 = bus_data_in2;   
                     cache_hit_out1 = cache_hit_in2; 
                 end 
+                else if(cache_hit_L2 == 2'b10 && !cache_hit_in2) begin
+                    bus_data_out1 = data_from_L2;
+                    cache_hit_out1 = 0;
+                end
+                /*  SITUACIJA KADA JE MISS U L2 ONDA UZM
+                else if(cache_hit_L2 == 2'b01) begin
+                end
+                */
                 else begin
-                    bus_data_out1 = 'b0;                
+                    bus_data_out1 = 'b0;
+                    //opcode_out    = opcode_in1;                
                 end
             end
         end 
@@ -103,14 +129,25 @@ module bus_controller
             if((bus_operation_in2 == 2'b00 || bus_operation_in2 == 2'b10) && grant_core2) begin
                 bus_operation_out1 = bus_operation_in2;
                 bus_address_out1   = bus_address_in2;
+                address_to_L2      = bus_address_in2;
+                opcode_out         = opcode_in2;
                 
                 if(cache_hit_in1) begin
                     //bus_data_out1 = bus_data_in1;
                     bus_data_out2 = bus_data_in1;
                     cache_hit_out2 = cache_hit_in1;
                 end 
+                else if(cache_hit_L2 == 2'b10 && !cache_hit_in1) begin
+                    bus_data_out2 = data_from_L2;
+                    cache_hit_out2 = 0;
+                end
+                /*  SITUACIJA KADA JE MISS U L2 ONDA UZM
+                else if(cache_hit_L2 == 2'b01) begin
+                end
+                */
                 else begin
                     bus_data_out2 = 'b0;                
+                    //opcode_out    = opcode_in2;
                 end
             end
         end
