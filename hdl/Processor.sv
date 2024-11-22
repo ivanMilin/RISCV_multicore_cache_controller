@@ -22,7 +22,8 @@ module Processor #
     output logic cache_hit_out,
 
     input  logic grant,
-    output logic req_core,    
+    output logic req_core,
+    output logic stall_out,    
     output logic flush_out,
     output logic [6:0] opcode_out
 );
@@ -35,9 +36,11 @@ module Processor #
     logic [1:0] wb_sel;
     logic reg_wr, rd_en, wr_en, sel_A, sel_B, br_taken, stall, dmem_rd_en, dmem_wr_en;
     
+    assign stall_out = stall;
+    
     PC pc (.clk(clk), .reset(reset), .B(next_index), .A(index));
            
-    Add4 add4 (.stall(stall || ~grant), .reset(reset), .A(index), .B(plus4));
+    Add4 add4 (.stall(stall || !grant), .reset(reset), .A(index), .B(plus4));
     add_immediate add_imm(.in1(index), .in2(B_i), .out(add_imm_s));
     Mux2 select_PC (.A(plus4), .B(add_imm_s), .sel(br_taken), .C(next_index));
     

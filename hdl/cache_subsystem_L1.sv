@@ -96,7 +96,7 @@ module cache_subsystem_L1
         req_core   = 1'b0;
         opcode_out = 'b0;
         
-        if((opcode_in[6:0] == 7'b0000011 && cache_hit == 2'b01) || opcode_in[6:0] == 7'b0100011) begin
+        if((opcode_in[6:0] == 7'b0000011 /*&& cache_hit == 2'b01*/) || opcode_in[6:0] == 7'b0100011) begin
            req_core = 1'b1;
            opcode_out = opcode_in[6:0];
         end
@@ -152,6 +152,7 @@ module cache_subsystem_L1
                 stall = 'b1;
                 
                 if(cache_hit == 2'b10) begin
+                    //stall = 'b0;
                     next_state = MAIN;
                 end else begin
                     next_state = WAIT_WRITE;

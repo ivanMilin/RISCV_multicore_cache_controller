@@ -43,6 +43,9 @@ module bus_controller
     input logic req_core1,    
     input logic req_core2,
     
+    input logic stall_core1,
+    input logic stall_core2,
+    
     input logic flush_in1,
     input logic flush_in2,
     
@@ -66,18 +69,31 @@ module bus_controller
         grant_core2 = 1'b1;
         grant_core_toggle_next = grant_core_toggle;
     
-        if (req_core1 && req_core2) begin
-            
+        if (req_core1 && req_core2) begin      
             if (grant_core_toggle) begin
                 grant_core1 = 1'b0;
                 grant_core2 = 1'b1;
-                grant_core_toggle_next = ~grant_core_toggle;
+                if(stall_core2 == 0) begin 
+                    grant_core_toggle_next = ~grant_core_toggle;
+                end    
             end else begin
                 grant_core1 = 1'b1;
                 grant_core2 = 1'b0;
-                grant_core_toggle_next = ~grant_core_toggle;
+                if(stall_core1 == 0) begin 
+                    grant_core_toggle_next = ~grant_core_toggle;
+                end
             end
-        end 
+        end
+        /*
+        else if(req_core1 && !req_core2) begin
+                grant_core1 = 1'b1;
+                grant_core2 = 1'b0;
+        end  
+        else if(req_core2 && !req_core1) begin
+                grant_core2 = 1'b1;
+                grant_core1 = 1'b0;
+        end
+        */  
         else begin
             grant_core1 = 1'b1;
             grant_core2 = 1'b1;
@@ -128,7 +144,7 @@ module bus_controller
                 end
             end
         end 
-        else if (req_core2) begin
+        if (req_core2) begin
             if(bus_operation_in2 != 2'b11 && grant_core2) begin
                 bus_operation_out1    = bus_operation_in2;
                 bus_address_out1      = bus_address_in2;

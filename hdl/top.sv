@@ -20,6 +20,7 @@ module top
     logic grant_core1, grant_core2;
     logic req_core1, req_core2;
     logic flush_in1, flush_in2;
+    logic stall_core1, stall_core2;
     
     logic [31:0] data_to_L2_1 , data_to_L2_2, data_to_L2_s;
     logic [31:0] data_from_L2, address_to_L2, data_to_L2;
@@ -46,6 +47,7 @@ module top
         
         .grant(grant_core1),
         .req_core(req_core1),
+        .stall_out(stall_core1),
         .flush_out(flush_in1),
         .opcode_out(opcode_out1) 
     );
@@ -93,6 +95,9 @@ module top
         .req_core1(req_core1),
         .req_core2(req_core2),
         
+        .stall_core1(stall_core1),
+        .stall_core2(stall_core2),
+        
         .flush_in1(flush_in1),
         .flush_in2(flush_in2),
         
@@ -122,6 +127,7 @@ module top
         
         .grant(grant_core2),
         .req_core(req_core2),
+        .stall_out(stall_core2),
         .flush_out(flush_in2),
         .opcode_out(opcode_out2)        
     );
@@ -150,10 +156,10 @@ module top
     
     always_comb begin 
     data_to_L2_s = 'b0;
-        if(req_core1 && grant_core1) begin 
+        if(req_core1 && grant_core1 && opcode_out1 == 7'b0100011) begin 
             data_to_L2_s = data_to_L2_1;
         end 
-        else if(req_core2 && grant_core2) begin 
+        else if(req_core2 && grant_core2 && opcode_out2 == 7'b0100011) begin 
             data_to_L2_s = data_to_L2_2;
         end
     end

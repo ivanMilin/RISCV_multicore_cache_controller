@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="Processor_TB_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="Processor_TB" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="65fs"></ZoomEndTime>
+      <Cursor1Time time="27fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="160"></NameColumnWidth>
+      <ValueColumnWidth column_width="72"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="41" />
+   <wvobject fp_name="/Processor_TB/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cache_L2/cache_memory_L2" type="array">
+      <obj_property name="ElementShortName">cache_memory_L2[1023:0]</obj_property>
+      <obj_property name="ObjectShortName">cache_memory_L2[1023:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cache_L2/bus_address_in" type="array">
+      <obj_property name="ElementShortName">bus_address_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_address_in[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/bus_address_out" type="array">
+      <obj_property name="ElementShortName">bus_address_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_address_out[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu2/bus_address_out" type="array">
+      <obj_property name="ElementShortName">bus_address_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_address_out[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/address_to_L2" type="array">
+      <obj_property name="ElementShortName">address_to_L2[31:0]</obj_property>
+      <obj_property name="ObjectShortName">address_to_L2[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/bus_operation_in2" type="array">
+      <obj_property name="ElementShortName">bus_operation_in2[1:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_operation_in2[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/bus_operation_out1" type="array">
+      <obj_property name="ElementShortName">bus_operation_out1[1:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_operation_out1[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/bus_operation_out2" type="array">
+      <obj_property name="ElementShortName">bus_operation_out2[1:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_operation_out2[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/pc/B" type="array">
+      <obj_property name="ElementShortName">B[31:0]</obj_property>
+      <obj_property name="ObjectShortName">B[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/pc/A" type="array">
+      <obj_property name="ElementShortName">A[31:0]</obj_property>
+      <obj_property name="ObjectShortName">A[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider1080">
+      <obj_property name="label">PC Counters</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu2/pc/B" type="array">
+      <obj_property name="ElementShortName">B[31:0]</obj_property>
+      <obj_property name="ObjectShortName">B[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu2/pc/A" type="array">
+      <obj_property name="ElementShortName">A[31:0]</obj_property>
+      <obj_property name="ObjectShortName">A[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cache_L2/bus_data_in" type="array">
+      <obj_property name="ElementShortName">bus_data_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_data_in[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/controller_and_cache/stall" type="logic">
+      <obj_property name="ElementShortName">stall</obj_property>
+      <obj_property name="ObjectShortName">stall</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/stall_core1" type="logic">
+      <obj_property name="ElementShortName">stall_core1</obj_property>
+      <obj_property name="ObjectShortName">stall_core1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/stall_core2" type="logic">
+      <obj_property name="ElementShortName">stall_core2</obj_property>
+      <obj_property name="ObjectShortName">stall_core2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/grant_core_toggle" type="logic">
+      <obj_property name="ElementShortName">grant_core_toggle</obj_property>
+      <obj_property name="ObjectShortName">grant_core_toggle</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/grant_core1" type="logic">
+      <obj_property name="ElementShortName">grant_core1</obj_property>
+      <obj_property name="ObjectShortName">grant_core1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/grant_core2" type="logic">
+      <obj_property name="ElementShortName">grant_core2</obj_property>
+      <obj_property name="ObjectShortName">grant_core2</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider1057">
+      <obj_property name="label">Grant &amp; Req</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/req_core1" type="logic">
+      <obj_property name="ElementShortName">req_core1</obj_property>
+      <obj_property name="ObjectShortName">req_core1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/bus_ctrl/req_core2" type="logic">
+      <obj_property name="ElementShortName">req_core2</obj_property>
+      <obj_property name="ObjectShortName">req_core2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/opcode_cpu1" type="array">
+      <obj_property name="ElementShortName">opcode_cpu1[6:0]</obj_property>
+      <obj_property name="ObjectShortName">opcode_cpu1[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/instruction" type="array">
+      <obj_property name="ElementShortName">instruction[31:0]</obj_property>
+      <obj_property name="ObjectShortName">instruction[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/opcode_cpu2" type="array">
+      <obj_property name="ElementShortName">opcode_cpu2[6:0]</obj_property>
+      <obj_property name="ObjectShortName">opcode_cpu2[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu2/instruction" type="array">
+      <obj_property name="ElementShortName">instruction[31:0]</obj_property>
+      <obj_property name="ObjectShortName">instruction[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/controller_and_cache/cache_hit" type="array">
+      <obj_property name="ElementShortName">cache_hit[1:0]</obj_property>
+      <obj_property name="ObjectShortName">cache_hit[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu2/controller_and_cache/stall" type="logic">
+      <obj_property name="ElementShortName">stall</obj_property>
+      <obj_property name="ObjectShortName">stall</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/controller_and_cache/state" type="array">
+      <obj_property name="ElementShortName">state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">state[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/data_to_L2_s" type="array">
+      <obj_property name="ElementShortName">data_to_L2_s[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_to_L2_s[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/data_to_L2_1" type="array">
+      <obj_property name="ElementShortName">data_to_L2_1[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_to_L2_1[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/data_to_L2_2" type="array">
+      <obj_property name="ElementShortName">data_to_L2_2[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_to_L2_2[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/controller_and_cache/data_in_s" type="array">
+      <obj_property name="ElementShortName">data_in_s[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_in_s[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/rf/wdata" type="array">
+      <obj_property name="ElementShortName">wdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">wdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/rf/waddr" type="array">
+      <obj_property name="ElementShortName">waddr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">waddr[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/rf/reg_wr" type="logic">
+      <obj_property name="ElementShortName">reg_wr</obj_property>
+      <obj_property name="ObjectShortName">reg_wr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Processor_TB/UUT/cpu1/rf/registerfile" type="array">
+      <obj_property name="ElementShortName">registerfile[31:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">registerfile[31:0][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+</wave_config>
