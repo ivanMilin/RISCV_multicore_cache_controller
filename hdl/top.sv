@@ -10,9 +10,9 @@ module top
     logic [31:0] bus_data_in2, bus_address_in2; 
 
     logic [31:0] bus_data_out1, bus_address_out1;
-    logic [1:0] bus_operation_out1, bus_operation_out2;
+    logic [ 1:0] bus_operation_out1, bus_operation_out2;
     logic [31:0] bus_data_out2, bus_address_out2;
-    logic [6:0] opcode_out1, opcode_out2, opcode_from_bus;
+    logic [ 6:0] opcode_out1, opcode_out2, opcode_from_bus;
     
     logic cache_hit_in1, cache_hit_in2; 
     logic cache_hit_out1, cache_hit_out2;
@@ -22,8 +22,9 @@ module top
     logic flush_in1, flush_in2;
     logic stall_core1, stall_core2;
     
-    logic [31:0] data_to_L2_1 , data_to_L2_2, data_to_L2_s;
+    logic [31:0] data_to_L2_1, data_to_L2_2, data_to_L2_s;
     logic [31:0] data_from_L2, address_to_L2, data_to_L2;
+    logic [31:0] data_from_dmem, data_to_dmem, address_to_dmem;
     logic [1:0] cache_hit_L2;
     
     Processor # (.file_cpu(1))
@@ -80,9 +81,6 @@ module top
         .address_to_L2(address_to_L2),
         .data_to_L2_input(data_to_L2_s),
         .data_to_L2_out(data_to_L2),
-        //------------------------------------------------
-        .data_from_dmem(), 
-        .address_to_dmem(),
         //------------------------------------------------
         .cache_hit_in1(cache_hit_out1),
         .cache_hit_in2(cache_hit_out2),
@@ -143,15 +141,28 @@ module top
         .opcode_in(opcode_from_bus),
         //.bus_operation_in(),
         
-        .data_from_dmem(0),
+        .data_from_dmem(data_from_dmem),
         .bus_data_in(data_to_L2),
         .bus_address_in(address_to_L2),
         
         .data_from_L2(data_from_L2),
         
-        .bus_address_out(),
+        .data_to_dmem(data_to_dmem),
+        .address_to_dmem(address_to_dmem),
     
         .cache_hit_out(cache_hit_L2)
+    );
+    
+    DataMemory dmem
+    (
+        .clk(clk),
+        .reset(reset),
+        
+        .opcode_in(opcode_from_bus),
+        .addr(address_to_dmem),
+        .data_from_L2(data_to_dmem),
+        
+        .data_from_dmem(data_from_dmem)
     );
     
     always_comb begin 

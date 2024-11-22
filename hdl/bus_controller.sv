@@ -29,8 +29,8 @@ module bus_controller
     output logic [31:0] data_to_L2_out,
     output logic [31:0] address_to_L2,
     //------------------------------------------------
-    input  logic [31:0] data_from_dmem, 
-    output logic [31:0] address_to_dmem,
+    //input  logic [31:0] data_from_dmem, 
+    //output logic [31:0] address_to_dmem,
     //------------------------------------------------
     input logic cache_hit_in1,
     input logic cache_hit_in2,
