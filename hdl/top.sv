@@ -19,13 +19,15 @@ module top
     
     logic grant_core1, grant_core2;
     logic req_core1, req_core2;
-    logic flush_in1, flush_in2;
+    logic flush_in1, flush_in2, flush_out;
     logic stall_core1, stall_core2;
     
     logic [31:0] data_to_L2_1, data_to_L2_2, data_to_L2_s;
     logic [31:0] data_from_L2, address_to_L2, data_to_L2;
     logic [31:0] data_from_dmem, data_to_dmem, address_to_dmem;
     logic [1:0] cache_hit_L2;
+    
+    logic [23:0] tag_to_L2_1, tag_to_L2_2, tag_to_L2_s, tag_to_L2_out; 
     
     Processor # (.file_cpu(1))
     cpu1 
@@ -50,7 +52,8 @@ module top
         .req_core(req_core1),
         .stall_out(stall_core1),
         .flush_out(flush_in1),
-        .opcode_out(opcode_out1) 
+        .opcode_out(opcode_out1),
+        .tag_to_L2(tag_to_L2_1) 
     );
     
     bus_controller bus_ctrl
@@ -99,9 +102,13 @@ module top
         .flush_in1(flush_in1),
         .flush_in2(flush_in2),
         
+        .flush_out(flush_out),
+        
         .opcode_in1(opcode_out1), 
         .opcode_in2(opcode_out2),
-        .opcode_out(opcode_from_bus)
+        .opcode_out(opcode_from_bus),
+        .tag_to_L2_in(tag_to_L2_s),
+        .tag_to_L2_out(tag_to_L2_out)
     );
     
     Processor # (.file_cpu(2))
@@ -117,6 +124,7 @@ module top
         .bus_data_out(bus_data_out2),
         .bus_address_out(bus_address_out2),
         .bus_operation_out(bus_operation_out2),
+        .tag_to_L2(tag_to_L2_2),
         
         .data_to_L2(data_to_L2_2),
         
@@ -127,7 +135,7 @@ module top
         .req_core(req_core2),
         .stall_out(stall_core2),
         .flush_out(flush_in2),
-        .opcode_out(opcode_out2)        
+        .opcode_out(opcode_out2)
     );
     
     cache_subsystem_L2 cache_L2
@@ -136,7 +144,7 @@ module top
         .reset(reset),
         .wr_en(wr_en),
         .rd_en(rd_en),
-        .flush(),
+        .flush(flush_out),
         
         .opcode_in(opcode_from_bus),
         //.bus_operation_in(),
@@ -150,7 +158,8 @@ module top
         .data_to_dmem(data_to_dmem),
         .address_to_dmem(address_to_dmem),
     
-        .cache_hit_out(cache_hit_L2)
+        .cache_hit_out(cache_hit_L2),
+        .bus_tag_in(tag_to_L2_out)
     );
     
     DataMemory dmem
@@ -167,11 +176,13 @@ module top
     
     always_comb begin 
     data_to_L2_s = 'b0;
-        if(req_core1 && grant_core1 && opcode_out1 == 7'b0100011) begin 
+        if(/*req_core1 && grant_core1 && */flush_in1 == 1'b1) begin 
             data_to_L2_s = data_to_L2_1;
+            tag_to_L2_s  = tag_to_L2_1;
         end 
-        else if(req_core2 && grant_core2 && opcode_out2 == 7'b0100011) begin 
+        else if(/*req_core2 && grant_core2 && */flush_in2 == 1'b1) begin 
             data_to_L2_s = data_to_L2_2;
+            tag_to_L2_s  = tag_to_L2_2;
         end
     end
 endmodule

@@ -21,6 +21,7 @@ module cache_subsystem_L1
     
     // data will go to the shared bus
     output logic [31:0] bus_data_out, 
+    output logic [24:0] tag_to_L2,
     output logic [31:0] bus_address_out,
     output logic [ 1:0] bus_operation_out,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
 
@@ -40,7 +41,7 @@ module cache_subsystem_L1
     {
         //invalid == 00, exclusive == 01, shared == 10, modified == 11
         logic [1:0]   mesi_state;  
-        logic [23:0]  tag;    
+        logic [23:0]  tag;
         logic [31:0]  data;   
     } cache_line_t;
     
@@ -218,7 +219,7 @@ module cache_subsystem_L1
         bus_address_out   = 'b0;
         //bus_data_out      = 'b0;
         next_mesi_state   = I;
-        data_to_L2 = 'b0;
+        //data_to_L2 = 'b0;
 
         if(grant) begin
             case(cache_memory_L1[index_in[7:2]].mesi_state)
@@ -242,7 +243,7 @@ module cache_subsystem_L1
                     if(opcode_in == 7'b0100011) begin        //PrWr/BusUpgr
                         bus_operation_out = 2'b01;
                         // THIS IS CHANGED // 
-                        data_to_L2 = write_L1;
+                        //data_to_L2 = write_L1;
                         bus_address_out = address_in; 
                         next_mesi_state = M;     
                     end
@@ -265,7 +266,7 @@ module cache_subsystem_L1
                     else if(opcode_in == 7'b0100011) begin  //PrWr/BusRdX
                         bus_operation_out = 2'b10;
                         // THIS IS CHANGED // 
-                        data_to_L2 = write_L1;
+                        //data_to_L2 = write_L1;
                         bus_address_out = address_in;
                         next_mesi_state = M; 
                     end
@@ -278,9 +279,11 @@ module cache_subsystem_L1
     // Implementation of MESI FSM - bus side
     //BusRd == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
     always_comb begin
-        //next_mesi_state = I;       
-        flush_out = 1'b0;
-        bus_data_out = 'b0;
+        //next_mesi_state = I; 
+        tag_to_L2     = 1'b0;      
+        flush_out     = 1'b0;
+        data_to_L2    = 'b0;
+        bus_data_out  = 'b0;
         cache_hit_out = 'b0;
         upgrade_mesi_state = I;
         
@@ -297,10 +300,16 @@ module cache_subsystem_L1
             case(cache_memory_L1[bus_address_in[7:2]].mesi_state)
                 M: begin
                     flush_out = 1'b1;
-                    upgrade_mesi_state = S;    
+                    //bus_address_out = address_in;    
+                    data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
+                    tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
+                    upgrade_mesi_state = S;
                 end
                 E: begin
                     flush_out = 1'b1;
+                    //bus_address_out = address_in;    
+                    data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
+                    tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
                     upgrade_mesi_state = S; 
                 end
                 S: begin
@@ -338,10 +347,15 @@ module cache_subsystem_L1
                 end
                 E: begin
                     flush_out = 1'b1;
+                    //bus_address_out = address_in;    
+                    data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
+                    tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
                     upgrade_mesi_state = I; 
                 end 
                 M: begin
-                    flush_out = 1'b0;
+                    flush_out = 1'b1;
+                    data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
+                    tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
                     upgrade_mesi_state = I; 
                 end
             endcase
@@ -424,7 +438,7 @@ module cache_subsystem_L1
             else if(bus_operation_in != 2'b11) begin
                 //Is bug happens, change it as a broadcast in bus_controller 
                 //cache_memory_L1[bus_address_in[7:2]] <= '{mesi_state: upgrade_mesi_state, tag: bus_address_in[31:8], data: bus_data_in}; 
-                cache_memory_L1[bus_address_in[7:2]] <= '{mesi_state: upgrade_mesi_state, tag: bus_address_in[31:8], data: cache_memory_L1[bus_address_in[7:2]].data}; 
+                cache_memory_L1[bus_address_in[7:2]] <= '{mesi_state: upgrade_mesi_state, tag: cache_memory_L1[bus_address_in[7:2]].tag, data: cache_memory_L1[bus_address_in[7:2]].data}; 
             end
         end
     end

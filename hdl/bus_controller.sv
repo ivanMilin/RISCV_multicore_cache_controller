@@ -24,9 +24,11 @@ module bus_controller
     output logic [31:0] bus_address_out2,
     output logic [ 1:0] bus_operation_out2, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
     //------------------------------------------------
+    input  logic [23:0] tag_to_L2_in,
     input  logic [31:0] data_from_L2,
     input  logic [31:0] data_to_L2_input, 
     output logic [31:0] data_to_L2_out,
+    output logic [23:0] tag_to_L2_out,
     output logic [31:0] address_to_L2,
     //------------------------------------------------
     //input  logic [31:0] data_from_dmem, 
@@ -48,6 +50,8 @@ module bus_controller
     
     input logic flush_in1,
     input logic flush_in2,
+    
+    output logic flush_out,
     
     input logic  [6:0] opcode_in1, 
     input logic  [6:0] opcode_in2,
@@ -122,7 +126,7 @@ module bus_controller
                 bus_operation_out2    = bus_operation_in1;
                 bus_address_out2      = bus_address_in1;
                 address_to_L2         = bus_address_in1;
-                data_to_L2_out        = data_to_L2_input;
+                //data_to_L2_out        = data_to_L2_input;
                 opcode_out            = opcode_in1;   
                 
                 if(cache_hit_in2) begin
@@ -149,7 +153,7 @@ module bus_controller
                 bus_operation_out1    = bus_operation_in2;
                 bus_address_out1      = bus_address_in2;
                 address_to_L2         = bus_address_in2;
-                data_to_L2_out        = data_to_L2_input;
+                //data_to_L2_out        = data_to_L2_input;
                 opcode_out            = opcode_in2;
                 
                 if(cache_hit_in1) begin
@@ -173,6 +177,17 @@ module bus_controller
         end
     end
     
+    always_comb begin
+        flush_out = 1'b0;
+        data_to_L2_out = 0;
+        tag_to_L2_out = 0;
+        
+        if(flush_in1 || flush_in2) begin
+            flush_out = 1'b1;
+            data_to_L2_out = data_to_L2_input;
+            tag_to_L2_out  = tag_to_L2_in;
+        end
+    end
     
     //CODE FOR FLUSH
     //

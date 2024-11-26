@@ -17,6 +17,7 @@ module Processor #
     output logic [31:0] bus_data_out, 
     output logic [31:0] bus_address_out,
     output logic [ 1:0] bus_operation_out,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
+    output logic [24:0] tag_to_L2,
 
     input logic cache_hit_in,  
     output logic cache_hit_out,
@@ -61,7 +62,7 @@ module Processor #
         .bus_data_in(bus_data_in),  .bus_address_in(bus_address_in),   .bus_operation_in(bus_operation_in), 
         .bus_data_out(bus_data_out), .bus_address_out(bus_address_out), .bus_operation_out(bus_operation_out),
         .data_out(data_out), .cache_hit_in(cache_hit_in), .cache_hit_out(cache_hit_out), .stall(stall), 
-        .req_core(req_core), .flush_out(flush_out), .opcode_out(opcode_out), .data_to_L2(data_to_L2));
+        .req_core(req_core), .flush_out(flush_out), .opcode_out(opcode_out), .data_to_L2(data_to_L2), .tag_to_L2(tag_to_L2));
         
     WriteBack writeback (.A(alu_out), .B(data_out), .C(index), .wb_sel(wb_sel), .wdata(wdata_s));
 
