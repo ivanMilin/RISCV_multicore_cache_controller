@@ -32,12 +32,12 @@ module DataMemory
 	always_ff @(negedge clk) begin
 		if(reset) begin
             for (integer i = 0; i < 1024; i = i + 1) begin
-                memory[i] <= 32'b0;
+                memory[i] <= i+1;//32'b0;
             end
 		end 
 		else begin 
 			if (opcode_in == 7'b0100011) begin
-				memory[addr[31:2]] <= data_from_L2;
+				memory[{addr[31:2],2'b00}] <= data_from_L2;
 			end
 		end
 	end
