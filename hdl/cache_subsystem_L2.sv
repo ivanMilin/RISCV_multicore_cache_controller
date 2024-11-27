@@ -4,8 +4,8 @@ module cache_subsystem_L2(
 
     input  logic clk,
     input  logic reset,
-    input  logic wr_en,
-    input  logic rd_en,
+    input  logic wr_en, // NOT USED
+    input  logic rd_en, // NOT USED
     input  logic flush,
     
     input  logic [ 6:0] opcode_in,    
@@ -19,155 +19,143 @@ module cache_subsystem_L2(
 
     output logic [31:0] data_to_dmem,
     output logic [31:0] address_to_dmem,
+    output logic [ 6:0] opcode_out,
     output logic [ 1:0] cache_hit_out
 );
 
     typedef struct packed {
         logic valid;
-        logic lru;            
-        logic [21:0] tag;
+        logic lru;            // 1 for least recently used, 0 for most recently used
+        logic [22:0] tag;
         logic [31:0] data;
     } cache_line_t;
 
-    cache_line_t cache_memory_L2[1023:0];
+    // 2-way set associative cache: 512 sets with 2 ways each
+    cache_line_t cache_memory_L2[511:0][1:0];
 
-    logic way0_hit;
-    logic way1_hit;  
-    logic [31:0] way0_line;
-    logic [11:0] way1_line; 
-    
-    logic [31:0] way0_line_mod;
-    logic [11:0] way1_line_mod; 
-    logic [31:0] way0_line_mod_s;
-    logic [11:0] way1_line_mod_s; 
+    logic [8:0] set_index;  // Extract 9-bit set index from the address
+    logic [22:0] tag;       // Extract 22-bit tag
+    logic way0_hit, way1_hit;
 
-    always_comb begin 
-        way0_line_mod   = (bus_address_in[11:0] >> 2) % 2;
-        way0_line_mod_s = (bus_address_in[11:0] >> 2) / 2;
+    assign set_index = bus_address_in[8:0]; 
+    assign tag = bus_address_in[31:9];  
 
-        if(bus_address_in[2] == 0) begin 
-            way0_line = bus_address_in[11:0] >> 2;
-            way1_line = (bus_address_in[11:0] >> 2) + 1;
-        end 
-        else begin 
-            way0_line = (bus_address_in[11:0] >> 2) - 1;
-            way1_line = bus_address_in[11:0] >> 2;
-        end
-    end
-
-    // Cache LOAD HIT/MISS detection
     always_comb begin
-        way0_hit = 1'b0;
-        way1_hit = 1'b0;
-        cache_hit_out = 'b0; 
+        cache_hit_out = 'b0;
         data_from_L2 = 'b0;
+        
+        way0_hit = cache_memory_L2[set_index][0].valid && (cache_memory_L2[set_index][0].tag == tag);
+        way1_hit = cache_memory_L2[set_index][1].valid && (cache_memory_L2[set_index][1].tag == tag);
 
-        if(opcode_in == 7'b0000011) begin
-            if(cache_memory_L2[way0_line].valid && (cache_memory_L2[way0_line].tag == bus_address_in[31:9])) begin
-                way0_hit = 1'b1;
-                way1_hit = 1'b0; 
-                cache_hit_out = 2'b10;
-                data_from_L2 = cache_memory_L2[way0_line].data;
+        if (opcode_in == 7'b0000011) begin // LOAD instruction
+            if (way0_hit) begin
+                cache_hit_out = 2'b10;  // HIT
+                data_from_L2 = cache_memory_L2[set_index][0].data;
+            end else if (way1_hit) begin
+                cache_hit_out = 2'b10;  // HIT
+                data_from_L2 = cache_memory_L2[set_index][1].data;
+            end else begin
+                cache_hit_out = 2'b01;  // MISS
             end
-            else if(cache_memory_L2[way1_line].valid && (cache_memory_L2[way1_line].tag == bus_address_in[31:9]))begin
-                way0_hit = 1'b0;
-                way1_hit = 1'b1; 
-                cache_hit_out = 2'b10;
-                data_from_L2 = cache_memory_L2[way1_line].data;
-            end
-            else begin
-                way0_hit = 1'b0;
-                way1_hit = 1'b0;
-                cache_hit_out = 2'b01;
-                data_from_L2 = 'b0;
-            end
-        end                
-    end
-    
-    always_ff @(negedge clk) begin
-        if (reset) begin
-            data_to_dmem <= 'b0;
-            address_to_dmem <= 'b0;            
-            for (integer i = 0; i < 1024; i++) begin
-                    cache_memory_L2[i].valid <= 0;
-                    cache_memory_L2[i].lru   <= 0;
-                    cache_memory_L2[i].tag   <= 0;//'b0;
-                    cache_memory_L2[i].data  <= 0;//'b0;
-            end
-        end 
-        else begin
-            if (flush == 1'b1) begin
-                //If tag does not exist in L2 just store in L2 cache
-                if(cache_memory_L2[way0_line].tag != bus_address_in[31:9] || cache_memory_L2[way1_line].tag != bus_address_in[31:9]) begin
-                    if (bus_address_in[2] == 1'b0) begin
-                        cache_memory_L2[way0_line].valid <= 1;
-                        cache_memory_L2[way0_line].lru   <= 0;               // Mark Way 0 as recently used
-                        cache_memory_L2[way1_line].lru   <= 1;               // Mark Way 1 as least recently used
-                        cache_memory_L2[way0_line].data  <= bus_data_in;
-                        cache_memory_L2[way0_line].tag   <= bus_tag_in[23:2];//bus_address_in[31:9];
-                    end
-                    if (bus_address_in[2] == 1'b1) begin
-                        cache_memory_L2[way1_line].valid <= 1;
-                        cache_memory_L2[way0_line].lru   <= 1;              // Mark Way 1 as recently used
-                        cache_memory_L2[way1_line].lru   <= 0;              // Mark Way 0 as least recently used
-                        cache_memory_L2[way1_line].data  <= bus_data_in;
-                        cache_memory_L2[way1_line].tag   <= bus_tag_in[23:2];//bus_address_in[31:9];
-                    end
-                end
-                //If tag exists in L2 and you remove this tag, first store this data in dmem, 
-                //and then store data with different tag in L2 cache      
-                else begin  
-                    if (bus_address_in[2] == 1'b0) begin
-                        cache_memory_L2[way0_line].valid <= 1;
-                        cache_memory_L2[way0_line].lru   <= 0;               // Mark Way 0 as recently used
-                        cache_memory_L2[way1_line].lru   <= 1;               // Mark Way 1 as least recently used
-                        cache_memory_L2[way0_line].data  <= bus_data_in;
-                        cache_memory_L2[way0_line].tag   <= bus_tag_in[23:2];//bus_address_in[31:9];
-                        data_to_dmem                     <= cache_memory_L2[way0_line].data;
-                        address_to_dmem                  <= bus_address_in;
-                    end
-                    if (bus_address_in[2] == 1'b1) begin
-                        cache_memory_L2[way1_line].valid <= 1;
-                        cache_memory_L2[way0_line].lru   <= 1;              // Mark Way 1 as recently used
-                        cache_memory_L2[way1_line].lru   <= 0;              // Mark Way 0 as least recently used
-                        cache_memory_L2[way1_line].data  <= bus_data_in;
-                        cache_memory_L2[way1_line].tag   <= bus_tag_in[23:2];//bus_address_in[31:9];
-                        data_to_dmem                     <= cache_memory_L2[way1_line].data;
-                        address_to_dmem                  <= bus_address_in;
-                    end
-                end                 
-            end
-            //In case of LOAD MISS scenario 
-            if (cache_hit_out == 2'b01 && opcode_in == 7'b0000011) begin
-                if (cache_memory_L2[way0_line].lru == 1) begin
-                    // Replace Way 0
-                    cache_memory_L2[way0_line].valid <= 1;
-                    cache_memory_L2[way0_line].tag   <= bus_address_in[31:9];
-                    cache_memory_L2[way0_line].data  <= data_from_dmem;
-                    cache_memory_L2[way0_line].lru   <= 0;              // Mark Way 0 as recently used
-                    cache_memory_L2[way1_line].lru   <= 1;              // Mark Way 1 as least recently used
-                end 
-                else begin                    
-                    // Replace Way 1
-                    cache_memory_L2[way1_line].valid <= 1;
-                    cache_memory_L2[way1_line].tag   <= bus_address_in[31:9];
-                    cache_memory_L2[way1_line].data  <= data_from_dmem;
-                    cache_memory_L2[way1_line].lru   <= 0;              // Mark Way 1 as recently used
-                    cache_memory_L2[way1_line].lru   <= 1;              // Mark Way 0 as least recently used
-                end
-            end
-            else if(cache_hit_out == 2'b10 && opcode_in == 7'b0000011) begin                                                
-                if(way0_hit == 1) begin                                 // This else statement is dedicated for
-                    cache_memory_L2[way1_line].lru   <= 1;              // scenario when LOAD-HIT happens
-                    cache_memory_L2[way0_line].lru   <= 0;              // Depending on which way has hit, you      
-                end                                                     // have to change LRU in both ways
-                else if(way1_hit == 1) begin
-                    cache_memory_L2[way0_line].lru   <= 1;
-                    cache_memory_L2[way1_line].lru   <= 0;
-                end            
-            end 
         end
     end
+
+    always_ff @(negedge clk) begin
+    if (reset) begin
+        data_to_dmem <= 'b0;
+        address_to_dmem <= 'b0;
+        opcode_out <= 'b0;
+        for (integer i = 0; i < 512; i++) begin
+            for (integer j = 0; j < 2; j++) begin
+                cache_memory_L2[i][j].valid <= 0;
+                cache_memory_L2[i][j].lru   <= 0;  // Way 0: LRU=0, Way 1: LRU=1
+                cache_memory_L2[i][j].tag   <= 'b0;
+                cache_memory_L2[i][j].data  <= 'b0;
+            end
+        end
+    end 
+    else begin
+        if (flush == 1'b1) begin
+            // Check both ways for a matching tag
+                if ((cache_memory_L2[set_index][0].tag != bus_address_in[31:9] && cache_memory_L2[set_index][1].tag != bus_address_in[31:9]) || 
+                      cache_memory_L2[set_index][0].valid == 0 && cache_memory_L2[set_index][1].valid == 0) begin
+                
+                // Use LRU to decide which way to replace
+                if(cache_memory_L2[set_index][0].lru == 0 && cache_memory_L2[set_index][1].lru == 0) begin
+                    cache_memory_L2[set_index][0].valid <= 1;
+                    cache_memory_L2[set_index][0].lru   <= 0; // Mark as recently used
+                    cache_memory_L2[set_index][1].lru   <= 1; // Mark Way 1 as least recently used
+                    cache_memory_L2[set_index][0].data  <= bus_data_in;
+                    cache_memory_L2[set_index][0].tag   <= bus_tag_in[23:1];//bus_address_in[31:9];
+                end
+                else if (cache_memory_L2[set_index][0].lru == 1) begin
+                    // Replace Way 0
+                    cache_memory_L2[set_index][0].valid <= 1;
+                    cache_memory_L2[set_index][0].lru   <= 0; // Mark as recently used
+                    cache_memory_L2[set_index][1].lru   <= 1; // Mark Way 1 as least recently used
+                    cache_memory_L2[set_index][0].data  <= bus_data_in;
+                    cache_memory_L2[set_index][0].tag   <= bus_tag_in[23:1];//bus_address_in[31:9];
+                end else begin
+                    // Replace Way 1
+                    cache_memory_L2[set_index][1].valid <= 1;
+                    cache_memory_L2[set_index][1].lru   <= 0; // Mark as recently used
+                    cache_memory_L2[set_index][0].lru   <= 1; // Mark Way 0 as least recently used
+                    cache_memory_L2[set_index][1].data  <= bus_data_in;
+                    cache_memory_L2[set_index][1].tag   <= bus_tag_in[23:1];//bus_address_in[31:9];
+                end
+            end 
+            else begin
+                // If tag exists in L2, evict it and write to dmem, then update L2
+                if (cache_memory_L2[set_index][0].tag == bus_address_in[31:9] && cache_memory_L2[set_index][0].valid != 0) begin
+                    data_to_dmem <= cache_memory_L2[set_index][0].data;
+                    address_to_dmem <= {cache_memory_L2[set_index][0].tag, set_index};
+                    cache_memory_L2[set_index][0].data <= bus_data_in;
+                    cache_memory_L2[set_index][0].lru   <= 0;
+                    cache_memory_L2[set_index][1].lru   <= 1;
+                    opcode_out <= 7'b0100011;
+                end 
+                else if (cache_memory_L2[set_index][1].tag == bus_address_in[31:9] && cache_memory_L2[set_index][1].valid != 0) begin
+                    data_to_dmem <= cache_memory_L2[set_index][1].data;
+                    address_to_dmem <= {cache_memory_L2[set_index][1].tag, set_index};
+                    cache_memory_L2[set_index][1].data <= bus_data_in;
+                    cache_memory_L2[set_index][0].lru   <= 1;
+                    cache_memory_L2[set_index][1].lru   <= 0;
+                    opcode_out <= 7'b0100011;
+                end
+            end
+        end
+        
+        // Handle LOAD MISS scenario
+        if (cache_hit_out == 2'b01 && opcode_in == 7'b0000011) begin
+            // Use LRU to decide which way to replace
+            if (cache_memory_L2[set_index][0].lru == 1) begin
+                // Replace Way 0
+                cache_memory_L2[set_index][0].valid <= 1;
+                cache_memory_L2[set_index][0].tag   <= bus_tag_in[23:1];//bus_address_in[31:9];
+                cache_memory_L2[set_index][0].data  <= data_from_dmem;
+                cache_memory_L2[set_index][0].lru   <= 0; // Mark as recently used
+                cache_memory_L2[set_index][1].lru   <= 1; // Mark Way 1 as least recently used
+            end else begin
+                // Replace Way 1
+                cache_memory_L2[set_index][1].valid <= 1;
+                cache_memory_L2[set_index][1].tag   <= bus_tag_in[23:1];//bus_address_in[31:9];
+                cache_memory_L2[set_index][1].data  <= data_from_dmem;
+                cache_memory_L2[set_index][1].lru   <= 0; // Mark as recently used
+                cache_memory_L2[set_index][0].lru   <= 1; // Mark Way 0 as least recently used
+            end
+        end 
+        else if (cache_hit_out == 2'b10 && opcode_in == 7'b0000011) begin
+            // Handle LOAD HIT: update LRU
+            if (way0_hit == 1) begin
+                cache_memory_L2[set_index][0].lru <= 0; // Way 0 recently used
+                cache_memory_L2[set_index][1].lru <= 1; // Way 1 least recently used
+            end else if (way1_hit == 1) begin
+                cache_memory_L2[set_index][0].lru <= 1; // Way 0 least recently used
+                cache_memory_L2[set_index][1].lru <= 0; // Way 1 recently used
+            end
+        end
+    end
+end
 
 endmodule
 

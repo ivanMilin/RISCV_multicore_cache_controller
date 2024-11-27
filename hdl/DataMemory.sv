@@ -14,7 +14,10 @@ module DataMemory
 
     logic [31:0] memory [1023:0];
 	
+	assign data_from_dmem = memory[addr[31:2]];
+	
 	// LOAD data from DMEM
+	/*
     always_comb begin
         if (opcode_in == 7'b0000011) begin
             data_from_dmem = memory[addr[31:2]];
@@ -23,7 +26,8 @@ module DataMemory
             data_from_dmem = 0;
         end
     end
-
+    */ 
+    
     // STORE data in DMEM
 	always_ff @(negedge clk) begin
 		if(reset) begin

@@ -12,7 +12,7 @@ module top
     logic [31:0] bus_data_out1, bus_address_out1;
     logic [ 1:0] bus_operation_out1, bus_operation_out2;
     logic [31:0] bus_data_out2, bus_address_out2;
-    logic [ 6:0] opcode_out1, opcode_out2, opcode_from_bus;
+    logic [ 6:0] opcode_out1, opcode_out2, opcode_from_bus, opcode_to_dmem;
     
     logic cache_hit_in1, cache_hit_in2; 
     logic cache_hit_out1, cache_hit_out2;
@@ -147,6 +147,7 @@ module top
         .flush(flush_out),
         
         .opcode_in(opcode_from_bus),
+        .opcode_out(opcode_to_dmem),
         //.bus_operation_in(),
         
         .data_from_dmem(data_from_dmem),
@@ -167,7 +168,7 @@ module top
         .clk(clk),
         .reset(reset),
         
-        .opcode_in(opcode_from_bus),
+        .opcode_in(opcode_to_dmem),
         .addr(address_to_dmem),
         .data_from_L2(data_to_dmem),
         
