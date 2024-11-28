@@ -14,7 +14,7 @@ module DataMemory
 
     logic [31:0] memory [1023:0];
 	
-	assign data_from_dmem = memory[addr[31:2]];
+	assign data_from_dmem = memory[addr];
 	
 	// LOAD data from DMEM
 	/*

@@ -37,8 +37,8 @@ module bus_controller
     input logic cache_hit_in1,
     input logic cache_hit_in2,
     
-    output logic cache_hit_out1,
-    output logic cache_hit_out2,  
+    output logic [1:0] cache_hit_out1,
+    output logic [1:0] cache_hit_out2,  
     //------------------------------------------------
     input logic [1:0] cache_hit_L2,
     //------------------------------------------------
@@ -115,28 +115,29 @@ module bus_controller
         bus_operation_out2  = 2'b11;
         //bus_operation_out2 = 'b0;
         
-        cache_hit_out1 = 'b0;
-        cache_hit_out2 = 'b0;
+        cache_hit_out1 = 2'b11;
+        cache_hit_out2 = 2'b11;
         opcode_out     = 'b0;
         address_to_L2  = 'b0;
         
         ////BusRd == 2'b00, BusUpgr == 2'b01, BusRdX == 2'b10
-        if(req_core1) begin
-            if(bus_operation_in1 != 2'b11 && grant_core1) begin
-                bus_operation_out2    = bus_operation_in1;
-                bus_address_out2      = bus_address_in1;
-                address_to_L2         = bus_address_in1;
-                //data_to_L2_out        = data_to_L2_input;
-                opcode_out            = opcode_in1;   
-                
+        if(req_core1 && grant_core1) begin
+        
+            bus_operation_out2    = bus_operation_in1;
+            bus_address_out2      = bus_address_in1;
+            address_to_L2         = bus_address_in1;
+            //data_to_L2_out        = data_to_L2_input;
+            opcode_out            = opcode_in1; 
+            if(bus_operation_in1 != 2'b11 /*&& grant_core1*/) begin
+ 
                 if(cache_hit_in2) begin
                     bus_data_out1 = bus_data_in2;
                     //bus_data_out2 = bus_data_in2;   
-                    cache_hit_out1 = cache_hit_in2; 
+                    cache_hit_out1 = 2'b01;         // HIT IN L1 - CPU 2 
                 end 
                 else if(cache_hit_L2 == 2'b10 && !cache_hit_in2) begin
                     bus_data_out1 = data_from_L2;
-                    cache_hit_out1 = 0;
+                    cache_hit_out1 = 2'b10;         // HIT IN L2
                 end
                 /*  SITUACIJA KADA JE MISS U L2 ONDA UZM
                 else if(cache_hit_L2 == 2'b01) begin
@@ -148,22 +149,22 @@ module bus_controller
                 end
             end
         end 
-        if (req_core2) begin
-            if(bus_operation_in2 != 2'b11 && grant_core2) begin
-                bus_operation_out1    = bus_operation_in2;
-                bus_address_out1      = bus_address_in2;
-                address_to_L2         = bus_address_in2;
-                //data_to_L2_out        = data_to_L2_input;
-                opcode_out            = opcode_in2;
-                
+        if (req_core2  && grant_core2) begin
+            bus_operation_out1    = bus_operation_in2;
+            bus_address_out1      = bus_address_in2;
+            address_to_L2         = bus_address_in2;
+            //data_to_L2_out        = data_to_L2_input;
+            opcode_out            = opcode_in2; 
+            if(bus_operation_in2 != 2'b11) begin
+
                 if(cache_hit_in1) begin
                     //bus_data_out1 = bus_data_in1;
                     bus_data_out2 = bus_data_in1;
-                    cache_hit_out2 = cache_hit_in1;
+                    cache_hit_out2 = 2'b01;         // HIT IN L1 - CPU 1
                 end 
                 else if(cache_hit_L2 == 2'b10 && !cache_hit_in1) begin
                     bus_data_out2 = data_from_L2;
-                    cache_hit_out2 = 0;
+                    cache_hit_out2 = 2'b10;         // HIT IN L2
                 end
                 /*  SITUACIJA KADA JE MISS U L2 ONDA UZM
                 else if(cache_hit_L2 == 2'b01) begin

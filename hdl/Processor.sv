@@ -19,7 +19,7 @@ module Processor #
     output logic [ 1:0] bus_operation_out,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
     output logic [24:0] tag_to_L2,
 
-    input logic cache_hit_in,  
+    input logic   [1:0] cache_hit_in,  
     output logic cache_hit_out,
 
     input  logic grant,

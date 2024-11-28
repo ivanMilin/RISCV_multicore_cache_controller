@@ -28,7 +28,7 @@ module cache_subsystem_L1
     output logic [31:0] data_out,
     output logic [31:0] data_to_L2,
     
-    input logic cache_hit_in,  
+    input logic [1:0] cache_hit_in,  
     output logic cache_hit_out,  
     //output logic bus_grant_out,
     output logic stall,
@@ -256,11 +256,14 @@ module cache_subsystem_L1
                     if(opcode_in == 7'b0000011) begin       //PrRd/BusRd(C) or PrRd/BusRd(#C)
                         bus_operation_out = 2'b00;
                         bus_address_out = address_in;
-                        if(cache_hit_in) begin
+                        if(cache_hit_in == 2'b01) begin
                             next_mesi_state = S;
                         end
-                        else if(!cache_hit_in) begin
+                        else if(cache_hit_in == 2'b10) begin
                             next_mesi_state = E;
+                        end
+                        else begin 
+                            next_mesi_state = I;
                         end
                     end
                     else if(opcode_in == 7'b0100011) begin  //PrWr/BusRdX

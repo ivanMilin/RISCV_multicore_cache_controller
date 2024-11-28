@@ -14,7 +14,8 @@ module top
     logic [31:0] bus_data_out2, bus_address_out2;
     logic [ 6:0] opcode_out1, opcode_out2, opcode_from_bus, opcode_to_dmem;
     
-    logic cache_hit_in1, cache_hit_in2; 
+    logic [1:0] cache_hit_in1; 
+    logic [1:0] cache_hit_in2; 
     logic cache_hit_out1, cache_hit_out2;
     
     logic grant_core1, grant_core2;
