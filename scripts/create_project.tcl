@@ -23,7 +23,6 @@ add_files -norecurse ../hdl/DataMemory.sv
 add_files -norecurse ../hdl/ImmediateGenerator.sv
 add_files -norecurse ../hdl/InstructionMemory.sv
 add_files -norecurse ../hdl/Mux2.sv
-add_files -norecurse ../hdl/mux2to1.sv
 add_files -norecurse ../hdl/PC.sv
 add_files -norecurse ../hdl/cache_subsystem_L1.sv
 add_files -norecurse ../hdl/cache_subsystem_L2.sv

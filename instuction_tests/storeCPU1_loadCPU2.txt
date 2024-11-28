@@ -1,0 +1,15 @@
+This asm code test storing in CPU1 and loading same data in CPU2
+Also checking state transitions: MESI state in caches goes from CPU1(I=>M=>S) and CPU2(I=>M) 
+
+================================================
+===========   CORE 1 Instructions    ===========
+================================================
+     0:        00a00093        addi x1 x0 10
+     4:        00102023        sw x1 0 x0
+
+================================================
+===========   CORE 2 Instructions    ===========
+================================================
+     8:        00100093        addi x1 x0 1
+     c:        00200113        addi x2 x0 2
+    10:        00002083        lw x1 0 x0

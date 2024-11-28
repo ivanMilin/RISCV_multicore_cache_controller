@@ -17,7 +17,7 @@ module cache_subsystem_L1
     // data will come from the shared bus
     input logic [31:0] bus_data_in,
     input logic [31:0] bus_address_in,
-    input logic [ 1:0] bus_operation_in, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    input logic [ 1:0] bus_operation_in,
     
     // data will go to the shared bus
     output logic [31:0] bus_data_out, 
@@ -29,17 +29,17 @@ module cache_subsystem_L1
     output logic [31:0] data_to_L2,
     
     input logic [1:0] cache_hit_in,  
-    output logic cache_hit_out,  
-    //output logic bus_grant_out,
+    output logic cache_hit_out, 
+    
     output logic stall,
     output logic req_core,
     output logic flush_out,
+    
     output logic [6:0] opcode_out
 );
 
     typedef struct packed 
     {
-        //invalid == 00, exclusive == 01, shared == 10, modified == 11
         logic [1:0]   mesi_state;  
         logic [23:0]  tag;
         logic [31:0]  data;   
@@ -60,7 +60,7 @@ module cache_subsystem_L1
         
     logic [1:0]   cache_hit;
     logic [31: 0] data_L1, write_L1, read_L1;
-    logic [31: 0] data_in_s; //variable get value either from register file or from dmem
+    logic [31: 0] data_in_s;                  //variable get value either from register file or from dmem
     
     logic [31:0] miss_address;
     
@@ -84,12 +84,7 @@ module cache_subsystem_L1
             end else begin
                 cache_hit = 2'b01;      // MISS
             end
-        end      
-        /*
-        else begin
-            cache_hit = 2'b00;          // NO REQUEST
-        end
-        */
+        end 
     end
 
     //Logic for sending request to bus
@@ -118,8 +113,6 @@ module cache_subsystem_L1
     next_state = MAIN;
 	stall = 'b0;
 	data_in_s = 'b0;
-	//dmem_address_out = 'b0;
-	//bus_address_out = 'b0;
 
         case (state)
             MAIN: begin
@@ -141,19 +134,14 @@ module cache_subsystem_L1
                     next_state = MAIN;
                     stall = 'b0;
                     data_in_s = 'b0;
-		            //address_out = 'b0; // Da li nam ovo ovde treba ?
-                    //bus_address_out = 'b0;
                 end             
             end
 
             WAIT_WRITE: begin
                 data_in_s = bus_data_in;
-                //bus_address_out = miss_address;
-                //address_out = miss_address; // Da li nam ovo ovde treba ?
                 stall = 'b1;
                 
                 if(cache_hit == 2'b10) begin
-                    //stall = 'b0;
                     next_state = MAIN;
                 end else begin
                     next_state = WAIT_WRITE;
@@ -162,7 +150,6 @@ module cache_subsystem_L1
       endcase    
     end
 
-    // What is the point of this block?
     always_comb begin
         if (rd_en) begin
             data_L1 = cache_memory_L1[index_in[7:2]].data;
@@ -213,14 +200,12 @@ module cache_subsystem_L1
     end
     
     // Implementation of MESI FSM - processor side
-    //BusRd == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
     always_comb begin
         bus_operation_out = 2'b11;
         bus_address_out   = 'b0;
-        //bus_data_out      = 'b0;
         next_mesi_state   = I;
-        //data_to_L2 = 'b0;
-
+    
         if(grant) begin
             case(cache_memory_L1[index_in[7:2]].mesi_state)
                 M: begin
@@ -242,8 +227,6 @@ module cache_subsystem_L1
                 S: begin
                     if(opcode_in == 7'b0100011) begin        //PrWr/BusUpgr
                         bus_operation_out = 2'b01;
-                        // THIS IS CHANGED // 
-                        //data_to_L2 = write_L1;
                         bus_address_out = address_in; 
                         next_mesi_state = M;     
                     end
@@ -268,8 +251,6 @@ module cache_subsystem_L1
                     end
                     else if(opcode_in == 7'b0100011) begin  //PrWr/BusRdX
                         bus_operation_out = 2'b10;
-                        // THIS IS CHANGED // 
-                        //data_to_L2 = write_L1;
                         bus_address_out = address_in;
                         next_mesi_state = M; 
                     end
@@ -280,9 +261,8 @@ module cache_subsystem_L1
     end
 
     // Implementation of MESI FSM - bus side
-    //BusRd == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
     always_comb begin
-        //next_mesi_state = I; 
         tag_to_L2     = 1'b0;      
         flush_out     = 1'b0;
         data_to_L2    = 'b0;
@@ -291,7 +271,6 @@ module cache_subsystem_L1
         upgrade_mesi_state = I;
         
         if(bus_operation_in == 2'b00) begin //BusRd == 2'b00
-            //if (cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[bus_address_in[7:2]].tag == tag_in) begin
             if (cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[bus_address_in[7:2]].tag == bus_address_in[31:8]) begin
                 bus_data_out = cache_memory_L1[bus_address_in[7:2]].data;
                 cache_hit_out = 1'b1;
@@ -303,14 +282,12 @@ module cache_subsystem_L1
             case(cache_memory_L1[bus_address_in[7:2]].mesi_state)
                 M: begin
                     flush_out = 1'b1;
-                    //bus_address_out = address_in;    
                     data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
                     tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
                     upgrade_mesi_state = S;
                 end
                 E: begin
                     flush_out = 1'b1;
-                    //bus_address_out = address_in;    
                     data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
                     tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
                     upgrade_mesi_state = S; 
@@ -334,7 +311,6 @@ module cache_subsystem_L1
             endcase
         end     
         else if(bus_operation_in == 2'b10) begin //BusRdX == 2'b10
-            //if (cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[bus_address_in[7:2]].tag == tag_in) begin
             if (cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && cache_memory_L1[bus_address_in[7:2]].tag == bus_address_in[31:8]) begin
                 bus_data_out = cache_memory_L1[bus_address_in[7:2]].data;
                 cache_hit_out = 1'b1;
@@ -350,7 +326,6 @@ module cache_subsystem_L1
                 end
                 E: begin
                     flush_out = 1'b1;
-                    //bus_address_out = address_in;    
                     data_to_L2 = cache_memory_L1[bus_address_in[7:2]].data;
                     tag_to_L2  = cache_memory_L1[bus_address_in[7:2]].tag;
                     upgrade_mesi_state = I; 
@@ -376,14 +351,12 @@ module cache_subsystem_L1
                     1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF00FF) | {16'b0, data_in_s[7:0], 8'b0};
                     2: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFF00FFFF) | {8'b0, data_in_s[7:0], 16'b0};
                     3: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h00FFFFFF) | {data_in_s[7:0], 24'b0};
-                    //default: write_L1 = 0;
                 endcase
             end
             3'b001: begin   // Store halfword
                 case (index_in[1])
                     0: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'hFFFF0000) | {16'b0, data_in_s[15:0]};
                     1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h0000FFFF) | {data_in_s[15:0], 16'b0};
-                    //default: write_L1 = 0;
                 endcase
             end
             3'b010: begin   // Store word
@@ -403,7 +376,6 @@ module cache_subsystem_L1
                     1: write_L1 = (cache_memory_L1[index_in[7:2]].data & 32'h0000FFFF) | {data_in_s[15:0], 16'b0};
                 endcase
             end
-            //default: write_L1 = 0;
         endcase 
     end
     
@@ -432,7 +404,6 @@ module cache_subsystem_L1
                 cache_memory_L1[index_in[7:2]] <= '{mesi_state: M, tag: tag_in, data: write_L1};
             end
             else if(opcode_in == 7'b0000011 && state == MAIN && cache_hit == 2'b10) begin
-                //cache_memory_L1[index_in[7:2]].mesi_state <= cache_memory_L1[index_in[7:2]].mesi_state;
                 cache_memory_L1[index_in[7:2]].mesi_state <= next_mesi_state;
             end
             else if(state == WAIT_WRITE) begin
@@ -446,6 +417,3 @@ module cache_subsystem_L1
         end
     end
 endmodule
-
-//PROVERI:
-//1. Sta treba da se upise ako se invalidira, za sad moze da ostane samo INVALID, a da je DATA nebitan

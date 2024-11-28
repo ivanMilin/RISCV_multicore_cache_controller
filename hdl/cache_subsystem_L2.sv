@@ -43,7 +43,7 @@ module cache_subsystem_L2(
     assign tag = bus_address_in[31:9];  
 
 
-     // State machine for cache miss handling
+    // State machine for cache miss handling
     always_ff @(posedge clk) begin
         if (reset) begin
             state <= IDLE;
@@ -95,46 +95,12 @@ module cache_subsystem_L2(
         end
     end
 
-    logic dmem_rd_en;
-    
-    logic cache_hit_prev;  // Holds the previous value of cache_hit_out
-
-    always_ff @(negedge clk) begin
-        if (reset) begin
-            dmem_rd_en <= 0;
-            cache_hit_prev <= 0;  // Reset the previous state
-        end else begin
-            // Delay dmem_rd_en by one cycle
-            dmem_rd_en <= (cache_hit_prev == 2'b01);
-            // Latch the current value of cache_hit_out for the next cycle
-            cache_hit_prev <= cache_hit_out;
-        end
-    end
-
-    
-    /*
-    always_ff @(negedge clk) begin 
-        if(reset) begin
-            dmem_rd_en <= 0;
-        end
-        else begin
-            if(cache_hit_out == 2'b01) begin 
-                dmem_rd_en <= 1;
-            end
-            else begin 
-                dmem_rd_en <= 0;
-            end
-        end
-    end
-    */
-    logic hello;
     always_ff @(negedge clk) begin
         if (reset) begin
             data_to_dmem    <= 'b0;
             address_to_dmem <= 'b0;
             opcode_out      <= 'b0;
             data_from_L2    <= 'b0;
-            hello <= 0;
             for (integer i = 0; i < 512; i++) begin
                 for (integer j = 0; j < 2; j++) begin
                     cache_memory_L2[i][j].valid <= 0;
@@ -260,13 +226,11 @@ module cache_subsystem_L2(
             else if(state == DMEM_WRITE) begin 
                 if(cache_memory_L2[set_index][0].lru == 0 && cache_memory_L2[set_index][1].lru == 0) begin 
                     // Smesti na nulti
-                    hello <= 1;
                     cache_memory_L2[set_index][0].valid <= 1;
                     cache_memory_L2[set_index][0].tag   <= bus_tag_in[23:1];//bus_address_in[31:9];
                     cache_memory_L2[set_index][0].data  <= data_from_dmem;
                     cache_memory_L2[set_index][0].lru   <= 0; // Mark as recently used
                     cache_memory_L2[set_index][1].lru   <= 1; // Mark Way 1 as least recently used
-                    //address_to_dmem <= {cache_memory_L2[set_index][0].tag, set_index};
                 end
                 else if(cache_memory_L2[set_index][0].lru == 1) begin 
                     // Smesti na nulti i trenutni podatak upisi u DMEM
@@ -274,7 +238,6 @@ module cache_subsystem_L2(
                     cache_memory_L2[set_index][0].lru  <= 0;
                     cache_memory_L2[set_index][1].lru  <= 1;
                     
-                    //address_to_dmem <= {cache_memory_L2[set_index][0].tag, set_index};
                     data_to_dmem    <= cache_memory_L2[set_index][0].data;
                     opcode_out      <= 7'b0100011;   
                 end
@@ -284,7 +247,6 @@ module cache_subsystem_L2(
                     cache_memory_L2[set_index][1].lru  <= 0;
                     cache_memory_L2[set_index][0].lru  <= 1;
                     
-                    //address_to_dmem <= {cache_memory_L2[set_index][1].tag, set_index};
                     data_to_dmem    <= cache_memory_L2[set_index][1].data;
                     opcode_out      <= 7'b0100011;
                 end

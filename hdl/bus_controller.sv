@@ -10,19 +10,19 @@ module bus_controller
     //------------------------------------------------
     input logic [31:0] bus_data_in1, 
     input logic [31:0] bus_address_in1,
-    input logic [ 1:0] bus_operation_in1,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
-    
+    input logic [ 1:0] bus_operation_in1,
+    //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
     input logic [31:0] bus_data_in2, 
     input logic [31:0] bus_address_in2,
-    input logic [ 1:0] bus_operation_in2,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
+    input logic [ 1:0] bus_operation_in2,
     //------------------------------------------------
     output logic [31:0] bus_data_out1,
     output logic [31:0] bus_address_out1,
-    output logic [ 1:0] bus_operation_out1, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
-
+    output logic [ 1:0] bus_operation_out1, 
+    //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
     output logic [31:0] bus_data_out2,
     output logic [31:0] bus_address_out2,
-    output logic [ 1:0] bus_operation_out2, //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10
+    output logic [ 1:0] bus_operation_out2,
     //------------------------------------------------
     input  logic [23:0] tag_to_L2_in,
     input  logic [31:0] data_from_L2,
@@ -44,15 +44,15 @@ module bus_controller
     //------------------------------------------------
     input logic req_core1,    
     input logic req_core2,
-    
+    //------------------------------------------------
     input logic stall_core1,
     input logic stall_core2,
-    
+    //------------------------------------------------
     input logic flush_in1,
     input logic flush_in2,
     
     output logic flush_out,
-    
+    //------------------------------------------------
     input logic  [6:0] opcode_in1, 
     input logic  [6:0] opcode_in2,
     output logic [6:0] opcode_out
@@ -88,16 +88,6 @@ module bus_controller
                 end
             end
         end
-        /*
-        else if(req_core1 && !req_core2) begin
-                grant_core1 = 1'b1;
-                grant_core2 = 1'b0;
-        end  
-        else if(req_core2 && !req_core1) begin
-                grant_core2 = 1'b1;
-                grant_core1 = 1'b0;
-        end
-        */  
         else begin
             grant_core1 = 1'b1;
             grant_core2 = 1'b1;
@@ -139,10 +129,6 @@ module bus_controller
                     bus_data_out1 = data_from_L2;
                     cache_hit_out1 = 2'b10;         // HIT IN L2
                 end
-                /*  SITUACIJA KADA JE MISS U L2 ONDA UZM
-                else if(cache_hit_L2 == 2'b01) begin
-                end
-                */
                 else begin
                     bus_data_out1 = 'b0;
                     //opcode_out    = opcode_in1;                
@@ -166,10 +152,6 @@ module bus_controller
                     bus_data_out2 = data_from_L2;
                     cache_hit_out2 = 2'b10;         // HIT IN L2
                 end
-                /*  SITUACIJA KADA JE MISS U L2 ONDA UZM
-                else if(cache_hit_L2 == 2'b01) begin
-                end
-                */
                 else begin
                     bus_data_out2 = 'b0;                
                     //opcode_out    = opcode_in2;

@@ -1,0 +1,37 @@
+This asm code test eviction from L1 to L2 and test storing data 
+in both ways of one set and also test eviction from L2 to DMEM
+
+================================================
+===========   CORE 1 Instructions    ===========
+================================================
+     0:        40000093        addi x1 x0 1024
+     4:        40008113        addi x2 x1 1024
+     8:        002081b3        add x3 x1 x2
+     c:        00208233        add x4 x1 x2
+    10:        004182b3        add x5 x3 x4
+    14:        00228333        add x6 x5 x2
+    18:        00602023        sw x6 0 x0
+    1c:        00300193        addi x3 x0 3
+    20:        00400213        addi x4 x0 4
+    24:        00600293        addi x5 x0 6
+    28:        00602023        sw x6 0 x0
+    2c:        00600293        addi x5 x0 6
+    30:        20502023        sw x5 0 x0    #Expecting tag 1 and index 0
+
+================================================
+===========   CORE 2 Instructions    ===========
+================================================
+
+    34:        00100093        addi x1 x0 1
+    38:        00200113        addi x2 x0 2
+    3c:        00300193        addi x3 x0 3
+    40:        00400213        addi x4 x0 4
+    44:        00500293        addi x5 x0 5
+    48:        00600313        addi x6 x0 6
+    4c:        00700393        addi x7 x0 7
+    50:        00800413        addi x8 x0 8
+    54:        00102023        sw x1 0 x0
+    58:        00400113        addi x2 x0 4
+    5c:        00400113        addi x2 x0 4
+    60:        00400113        addi x2 x0 4
+    64:        20502023        sw x5 0 x0   #Expecting tag 1 and index 0
