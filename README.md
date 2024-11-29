@@ -1,3 +1,3 @@
 System overview :
 
-![MyTop](https://github.com/user-attachments/assets/ea663f86-1be7-408b-aa9e-a58096884913)
+![top_module](https://github.com/user-attachments/assets/797874b8-bdf8-472e-bbbd-0521b15bd7ab)
