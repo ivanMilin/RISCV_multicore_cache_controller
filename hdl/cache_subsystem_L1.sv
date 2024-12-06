@@ -55,7 +55,7 @@ module cache_subsystem_L1
 
     
     cache_line_t cache_memory_L1[255:0];
-    mesi_state_t mesi_state, next_mesi_state; //signal for changing state inside of CPU
+    mesi_state_t mesi_state_s, next_mesi_state; //signal for changing state inside of CPU
     mesi_state_t upgrade_mesi_state;          //signal for changing state recieved from other CPU
         
     logic [1:0]   cache_hit;
@@ -102,10 +102,10 @@ module cache_subsystem_L1
     always_ff @(posedge clk) begin
         if (reset) begin
             state <= MAIN;
-            mesi_state <= I;
+            //mesi_state_s <= I;
         end else begin
             state <= next_state;
-            mesi_state <= next_mesi_state;
+            //mesi_state_s <= next_mesi_state;
         end
     end
     
@@ -211,17 +211,17 @@ module cache_subsystem_L1
                 M: begin
                     if(opcode_in == 7'b0100011 || opcode_in == 7'b0000011) begin //PrRd/- PrWr/-
                         next_mesi_state = M;
-                        bus_operation_out = 2'b11;
+                        //bus_operation_out = 2'b11;
                     end
                 end
                 E: begin
                     if(opcode_in == 7'b0100011) begin //PrWr/-
                         next_mesi_state = M;
-                        bus_operation_out = 2'b11;
+                        //bus_operation_out = 2'b11;
                     end
                     else if(opcode_in == 7'b0000011) begin //PrRd/-
                         next_mesi_state = E;
-                        bus_operation_out = 2'b11;
+                        //bus_operation_out = 2'b11;
                     end
                 end
                 S: begin
@@ -232,7 +232,7 @@ module cache_subsystem_L1
                     end
                     else if(opcode_in == 7'b0000011) begin   //PrRd/-
                         next_mesi_state = S;
-                        bus_operation_out = 2'b11;
+                        //bus_operation_out = 2'b11;
                     end
                 end
                 I: begin

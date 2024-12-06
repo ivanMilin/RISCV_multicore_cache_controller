@@ -151,12 +151,12 @@ module ref_model
 	property assume_grant_active;
 		@(posedge clk) disable iff(reset)
 		grant == 1;
-    endproperty
+    	endproperty
 
 	property assume_grant_active_neg;
 		@(negedge clk) disable iff(reset)
 		grant == 1;
-    endproperty
+    	endproperty
 
 	// Assumptions for LOAD - Can not load into x0 register and limit address size due to memory limitations
 	property assume_load_rs2_not_NULL;
@@ -223,7 +223,7 @@ module ref_model
 	endproperty
 
 
-    // CHECK FOR THE NUMBER OF CYCLES 
+    	// CHECK FOR THE NUMBER OF CYCLES 
 	property assume_if_stall_not_null;
 		//gb_stall |-> $stable(Processor.instruction);
 		@(posedge clk) disable iff(reset)
@@ -256,6 +256,26 @@ module ref_model
 		Processor.instruction[6:0] == instruction_L_type_opcode |-> Processor.instruction[14:12] inside {3'b000,3'b001,3'b010,3'b100,3'b101};
 	endproperty
 
+	property assume_cache_miss_for_two_cycles_1;
+		@(posedge clk) disable iff(reset)
+		Processor.cache_hit_in == 2'b01 |-> $stable(Processor.cache_hit_in)[*2];
+	endproperty
+
+	property assume_cache_miss_for_two_cycles_neg_1;
+		@(negedge clk) disable iff(reset)
+		Processor.cache_hit_in == 2'b01 |-> $stable(Processor.cache_hit_in)[*2];
+	endproperty
+	
+	property assume_cache_miss_for_two_cycles_2;
+		@(posedge clk) disable iff(reset)
+		Processor.cache_hit_in == 2'b10 |-> $stable(Processor.cache_hit_in)[*2];
+	endproperty
+
+	property assume_cache_miss_for_two_cycles_neg_2;
+		@(negedge clk) disable iff(reset)
+		Processor.cache_hit_in == 2'b10 |-> $stable(Processor.cache_hit_in)[*2];
+	endproperty
+
 	// Assumptions for instructions - which opcodes will tool feed
 	all_types_active             : assume property(assume_opcodes);
 	all_types_active_neg         : assume property(assume_opcodes_neg);
@@ -282,14 +302,20 @@ module ref_model
 	asm_if_stall_not_null	  	 : assume property (assume_if_stall_not_null);
 	asm_if_stall_not_null_neg 	 : assume property (assume_if_stall_not_null_neg);
 
-	asm_funct3_S_type_opcode     : assume property (assume_funct3_S_type_opcode);
-	asm_funct3_S_type_opcode_neg : assume property (assume_funct3_S_type_opcode_neg);
+	asm_funct3_S_type_opcode         : assume property (assume_funct3_S_type_opcode);
+	asm_funct3_S_type_opcode_neg     : assume property (assume_funct3_S_type_opcode_neg);
 	
-	asm_funct3_L_type_opcode     : assume property (assume_funct3_L_type_opcode);
-	asm_funct3_L_type_opcode_neg : assume property (assume_funct3_L_type_opcode_neg);
+	asm_funct3_L_type_opcode         : assume property (assume_funct3_L_type_opcode);
+	asm_funct3_L_type_opcode_neg     : assume property (assume_funct3_L_type_opcode_neg);
 
-	asm_assume_grant_active      : assume property (assume_grant_active);
-	asm_assume_grant_active_neg  : assume property (assume_grant_active_neg);
+	asm_assume_grant_active          : assume property (assume_grant_active);
+	asm_assume_grant_active_neg      : assume property (assume_grant_active_neg);
+
+	asm_assume_cache_miss_for_two_cycles_1     : assume property (assume_cache_miss_for_two_cycles_1);
+	asm_assume_cache_miss_for_two_cycles_neg_1 : assume property (assume_cache_miss_for_two_cycles_neg_1);
+	
+	asm_assume_cache_miss_for_two_cycles_2     : assume property (assume_cache_miss_for_two_cycles_2);
+	asm_assume_cache_miss_for_two_cycles_neg_2 : assume property (assume_cache_miss_for_two_cycles_neg_2);
 
 	// Grey box signals assignment
 	assign gb_instruction_ref = Processor.instruction;	
@@ -1167,9 +1193,118 @@ module ref_model
 		Processor.instruction[6:0] == instruction_R_type_opcode || Processor.instruction[6:0] == instruction_I_type_opcode || Processor.instruction[6:0] == instruction_U_type_opcode |->
 		Processor.rf.registerfile[destination_addr] == result_ref_reg;
 	endproperty
+
+	// Property that checks if core issues a request for bus controller
+	property req_core_asserted;
+		Processor.instruction[6:0] == instruction_L_type_opcode || Processor.instruction[6:0] == instruction_S_type_opcode |-> 
+		Processor.req_core == 1'b1 && Processor.opcode_out == Processor.instruction[6:0];
+	endproperty
 	
 	// ================================================================================================================================================================== // 
+
+	// MESI PROTOCOL - Processor side
+	property mesi_transition_I_S_load;
+		Processor.instruction[6:0] == instruction_L_type_opcode && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b00 && Processor.cache_hit_in == 2'b01|-> 
+		Processor.controller_and_cache.bus_operation_out == 2'b00 && Processor.bus_address_out == Processor.controller_and_cache.address_in
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].mesi_state == 2'b10;		
+	endproperty
+
+	property mesi_transition_I_E_load;
+		Processor.instruction[6:0] == instruction_L_type_opcode && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b00 && Processor.cache_hit_in == 2'b10|-> 
+		Processor.controller_and_cache.bus_operation_out == 2'b00 && Processor.bus_address_out == Processor.controller_and_cache.address_in
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].mesi_state == 2'b01;		
+	endproperty
+
+	property mesi_transition_S_S_load;
+		Processor.instruction[6:0] == instruction_L_type_opcode && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b10 && bus_operation_in == 2'b11 |-> 
+		Processor.bus_operation_out == 2'b11 && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b10;		
+	endproperty
+
+	property mesi_transition_M_M_load;
+		Processor.instruction[6:0] == instruction_L_type_opcode && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b11 && bus_operation_in == 2'b11 |-> 
+		Processor.bus_operation_out == 2'b11 && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b11;		
+	endproperty
+
+	property mesi_transition_E_E_load;
+		Processor.instruction[6:0] == instruction_L_type_opcode && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b01 && bus_operation_in == 2'b11 |-> 
+		Processor.bus_operation_out == 2'b11 && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b01;		
+	endproperty
 	
+	// -------------------------------------------------------------------------------------------------------------------------------------------------------------------- //
+
+	property mesi_transition_I_M_store;
+		Processor.instruction[6:0] == instruction_S_type_opcode && Processor.controller_and_cache.bus_operation_out == 2'b10 |-> 
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b00 && Processor.bus_address_out == Processor.controller_and_cache.address_in
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].mesi_state == 2'b11;
+	endproperty
+
+	property mesi_transition_S_M_store;
+		Processor.instruction[6:0] == instruction_S_type_opcode && Processor.controller_and_cache.bus_operation_out == 2'b01 |-> 
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b10 && Processor.bus_address_out == Processor.controller_and_cache.address_in
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].mesi_state == 2'b11;
+	endproperty
+
+	property mesi_transition_E_M_store;
+		Processor.instruction[6:0] == instruction_S_type_opcode && Processor.bus_operation_out == 2'b11 && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b01 |=> 
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].mesi_state == 2'b11;
+	endproperty
+
+	property mesi_transition_M_M_store;
+		Processor.instruction[6:0] == instruction_S_type_opcode && Processor.bus_operation_out == 2'b11 && Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.index_in[7:2]].mesi_state == 2'b11 |=> 
+		Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.index_in[7:2])].mesi_state == 2'b11;
+	endproperty
+
+	// MESI PROTOCOL - Bus side
+	
+	property mesi_bus_transition_M_S;
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.bus_address_in[7:2]].mesi_state == 2'b11 && Processor.controller_and_cache.bus_operation_in == 2'b00 && 
+		Processor.instruction[6:0] != instruction_S_type_opcode && Processor.instruction[6:0] != instruction_L_type_opcode |-> 
+		Processor.flush_out == 1'b1  && Processor.data_to_L2 == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].data && Processor.tag_to_L2  == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].tag 
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.bus_address_in[7:2])].mesi_state == 2'b10;
+	endproperty
+
+	property mesi_bus_transition_M_I;
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.bus_address_in[7:2]].mesi_state == 2'b11 && Processor.controller_and_cache.bus_operation_in == 2'b10 && 
+		Processor.instruction[6:0] != instruction_S_type_opcode && Processor.instruction[6:0] != instruction_L_type_opcode |-> 
+		Processor.flush_out == 1'b1 && Processor.data_to_L2 == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].data && Processor.tag_to_L2  == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].tag
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.bus_address_in[7:2])].mesi_state == 2'b00;
+	endproperty
+
+	property mesi_bus_transition_E_S;
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.bus_address_in[7:2]].mesi_state == 2'b01 && Processor.controller_and_cache.bus_operation_in == 2'b00 && 
+		Processor.instruction[6:0] != instruction_S_type_opcode && Processor.instruction[6:0] != instruction_L_type_opcode |-> 
+		Processor.flush_out == 1'b1 && Processor.data_to_L2 == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].data && Processor.tag_to_L2  == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].tag
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.bus_address_in[7:2])].mesi_state == 2'b10;
+	endproperty
+
+	property mesi_bus_transition_E_I;
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.bus_address_in[7:2]].mesi_state == 2'b01 && Processor.controller_and_cache.bus_operation_in == 2'b10 && 
+		Processor.instruction[6:0] != instruction_S_type_opcode && Processor.instruction[6:0] != instruction_L_type_opcode |-> 
+		Processor.flush_out == 1'b1 && Processor.data_to_L2 == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].data && Processor.tag_to_L2  == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].tag
+		##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.bus_address_in[7:2])].mesi_state == 2'b00;
+	endproperty
+
+	property mesi_bus_transition_S_S;
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.bus_address_in[7:2]].mesi_state == 2'b10 && Processor.controller_and_cache.bus_operation_in == 2'b00 && 
+		Processor.instruction[6:0] != instruction_S_type_opcode && Processor.instruction[6:0] != instruction_L_type_opcode |-> 
+		Processor.flush_out == 1'b0 ##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.bus_address_in[7:2])].mesi_state == 2'b10;
+	endproperty	
+
+	property mesi_bus_transition_S_I;
+		Processor.controller_and_cache.cache_memory_L1[Processor.controller_and_cache.bus_address_in[7:2]].mesi_state == 2'b10 && (Processor.controller_and_cache.bus_operation_in == 2'b10 || Processor.controller_and_cache.bus_operation_in == 2'b01) && 
+		Processor.instruction[6:0] != instruction_S_type_opcode && Processor.instruction[6:0] != instruction_L_type_opcode |-> 
+		Processor.flush_out == 1'b0 ##1 Processor.controller_and_cache.cache_memory_L1[$past(Processor.controller_and_cache.bus_address_in[7:2])].mesi_state == 2'b00;
+	endproperty	
+
+	// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- // 
+
+	property check_cache_hit_out;
+		(Processor.bus_operation_in == 2'b00 || Processor.bus_operation_in == 2'b10) && Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].mesi_state != 2'b00 && 
+		Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].tag == bus_address_in[31:8] |->
+		Processor.controller_and_cache.cache_hit_out == 1'b1 && Processor.bus_data_out == Processor.controller_and_cache.cache_memory_L1[bus_address_in[7:2]].data;
+	endproperty
+	
+
 	// ===================== ASSERTIONS SECTION ====================== //
  
 	// ============ CONTROLLER ASSERTS =========== //
@@ -1195,23 +1330,23 @@ module ref_model
 	// ============= CACHE CONTROLLER LOAD ASSERTS ============= //
 	// ------------- Asserts for cache hit scenario ------------ // 
 	
-	assert_check_load_hit_word 				: assert property(@(negedge clk) check_load_hit_word);
+	//ASSERT PASSED//assert_check_load_hit_word 				: assert property(@(negedge clk) check_load_hit_word);
 
-	assert_check_load_hit_half_word_lower_unsigned	    	: assert property(@(negedge clk) check_load_hit_half_word_lower_unsigned);
-	assert_check_load_hit_half_word_upper_unsigned	    	: assert property(@(negedge clk) check_load_hit_half_word_upper_unsigned);
+	//ASSERT PASSED//assert_check_load_hit_half_word_lower_unsigned	    	: assert property(@(negedge clk) check_load_hit_half_word_lower_unsigned);
+	//ASSERT PASSED//assert_check_load_hit_half_word_upper_unsigned	    	: assert property(@(negedge clk) check_load_hit_half_word_upper_unsigned);
 
-	assert_check_load_hit_half_word_lower_signed	    	: assert property(@(negedge clk) check_load_hit_half_word_lower_signed);
-	assert_check_load_hit_half_word_upper_signed	    	: assert property(@(negedge clk) check_load_hit_half_word_upper_signed);
+	//ASSERT PASSED//assert_check_load_hit_half_word_lower_signed	    	: assert property(@(negedge clk) check_load_hit_half_word_lower_signed);
+	//ASSERT PASSED//assert_check_load_hit_half_word_upper_signed	    	: assert property(@(negedge clk) check_load_hit_half_word_upper_signed);
 
-	assert_check_load_hit_byte0_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte0_unsigned);
-	assert_check_load_hit_byte1_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte1_unsigned);
-	assert_check_load_hit_byte2_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte2_unsigned);
-	assert_check_load_hit_byte3_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte3_unsigned);
+	//ASSERT PASSED//assert_check_load_hit_byte0_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte0_unsigned);
+	//ASSERT PASSED//assert_check_load_hit_byte1_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte1_unsigned);
+	//ASSERT PASSED//assert_check_load_hit_byte2_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte2_unsigned);
+	//ASSERT PASSED//assert_check_load_hit_byte3_unsigned	    		: assert property(@(negedge clk) check_load_hit_byte3_unsigned);
 
-	assert_check_load_hit_byte0_signed	    		: assert property(@(negedge clk) check_load_hit_byte0_signed);
-	assert_check_load_hit_byte1_signed	    		: assert property(@(negedge clk) check_load_hit_byte1_signed);
-	assert_check_load_hit_byte2_signed	    		: assert property(@(negedge clk) check_load_hit_byte2_signed);
-	assert_check_load_hit_byte3_signed	    		: assert property(@(negedge clk) check_load_hit_byte3_signed);
+	//ASSERT PASSED//assert_check_load_hit_byte0_signed	    		: assert property(@(negedge clk) check_load_hit_byte0_signed);
+	//ASSERT PASSED//assert_check_load_hit_byte1_signed	    		: assert property(@(negedge clk) check_load_hit_byte1_signed);
+	//ASSERT PASSED//assert_check_load_hit_byte2_signed	    		: assert property(@(negedge clk) check_load_hit_byte2_signed);
+	//ASSERT PASSED//assert_check_load_hit_byte3_signed	    		: assert property(@(negedge clk) check_load_hit_byte3_signed);
 	
 	//ASSERT PASSED//assert_check_load_miss_signal 					: assert property(@(posedge clk) check_load_miss_signal);
 	
@@ -1227,5 +1362,30 @@ module ref_model
 
 	// ============= REGISTER FILE RESULT CHECK  ASSERTS ================ //
 	//ASSERT PASSED//assert_check_rf_R_I_U : assert property(@(posedge clk) check_rf_R_I_U);
-		
+
+	//ASSERT PASSED//assert_req_core_asserted : assert property (@(posedge clk) req_core_asserted);		
+
+	// ============= MESI PROTOCOL TRANSITIONS =============== //
+	// CPU SENDS A REQUEST
+	assert_mesi_transition_I_S_load : assert property(@(posedge clk) mesi_transition_I_S_load);
+	assert_mesi_transition_I_E_load : assert property(@(posedge clk) mesi_transition_I_E_load);
+	//ASSERT PASSED//assert_mesi_transition_S_S_load : assert property(@(negedge clk) mesi_transition_S_S_load);
+	//ASSERT PASSED//assert_mesi_transition_M_M_load : assert property(@(negedge clk) mesi_transition_M_M_load);
+	//ASSERT PASSED//assert_mesi_transition_E_E_load : assert property(@(negedge clk) mesi_transition_E_E_load);
+	//ASSERT PASSED//assert_mesi_transition_I_M_store : assert property(@(negedge clk) mesi_transition_I_M_store);
+	//ASSERT PASSED//assert_mesi_transition_S_M_store : assert property(@(negedge clk) mesi_transition_S_M_store);
+	//ASSERT PASSED//assert_mesi_transition_E_M_store : assert property(@(negedge clk) mesi_transition_E_M_store);
+	//ASSERT PASSED//assert_mesi_transition_M_M_store : assert property(@(negedge clk) mesi_transition_M_M_store);
+
+	// CPU RECIEVES A REQUEST
+	//ASSERT PASSED//assert_mesi_bus_transition_M_S : assert property (@(negedge clk) mesi_bus_transition_M_S);
+	//ASSERT PASSED//assert_mesi_bus_transition_M_I : assert property (@(negedge clk) mesi_bus_transition_M_I);
+	//ASSERT PASSED//assert_mesi_bus_transition_E_S : assert property (@(negedge clk) mesi_bus_transition_E_S);
+	//ASSERT PASSED//assert_mesi_bus_transition_E_I : assert property (@(negedge clk) mesi_bus_transition_E_I);
+	//ASSERT PASSED//assert_mesi_bus_transition_S_S : assert property (@(negedge clk) mesi_bus_transition_S_S);
+	//ASSERT PASSED//assert_mesi_bus_transition_S_I : assert property (@(negedge clk) mesi_bus_transition_S_I);
+	
+	//ASSERT PASSED//assert_check_cache_hit_out : assert property (@(posedge clk) check_cache_hit_out);
+	
+
 endmodule

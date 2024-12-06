@@ -20,7 +20,7 @@ module ImmediateGenerator
 			end
 			7'b0100011: begin	// S-type instructions
 				//imm_out = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]};
-				imm_out = {{20{0}},instruction[31:25], instruction[11:7]};
+				imm_out = {{20{1'b0}},instruction[31:25], instruction[11:7]};
 			end
 			7'b1100011: begin	// B-type instructions
 				imm_out = {{20{instruction[31]}}, instruction[7],instruction[30:25],instruction[11:8],1'b0};
