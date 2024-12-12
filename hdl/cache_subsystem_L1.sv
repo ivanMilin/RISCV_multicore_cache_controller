@@ -21,7 +21,7 @@ module cache_subsystem_L1
     
     // data will go to the shared bus
     output logic [31:0] bus_data_out, 
-    output logic [24:0] tag_to_L2,
+    output logic [23:0] tag_to_L2,
     output logic [31:0] bus_address_out,
     output logic [ 1:0] bus_operation_out,//BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
 
@@ -65,7 +65,7 @@ module cache_subsystem_L1
     logic [31:0] miss_address;
     
     logic [23 : 0] tag_in;
-    logic [7 : 0] index_in;
+    logic [7 :  0] index_in;
 
     assign tag_in   = address_in[31 : 8];
     assign index_in = address_in[ 7 : 0];
@@ -90,11 +90,10 @@ module cache_subsystem_L1
     //Logic for sending request to bus
     always_comb begin
         req_core   = 1'b0;
-        opcode_out = 'b0;
+        opcode_out = opcode_in[6:0];
         
-        if((opcode_in[6:0] == 7'b0000011 /*&& cache_hit == 2'b01*/) || opcode_in[6:0] == 7'b0100011) begin
+        if((opcode_in[6:0] == 7'b0000011 && cache_hit == 2'b01) || (opcode_in[6:0] == 7'b0100011 && cache_memory_L1[index_in[7:2]].mesi_state == 2'b00) || (opcode_in[6:0] == 7'b0100011 && cache_memory_L1[index_in[7:2]].mesi_state == 2'b10)) begin
            req_core = 1'b1;
-           opcode_out = opcode_in[6:0];
         end
     end 
 
@@ -263,7 +262,7 @@ module cache_subsystem_L1
     // Implementation of MESI FSM - bus side
     //BusRD == 2'00, BusUpgr == 2'b01, BusRdX == 2'b10, BusNoN == 2'b11
     always_comb begin
-        tag_to_L2     = 1'b0;      
+        tag_to_L2     = 'b0;      
         flush_out     = 1'b0;
         data_to_L2    = 'b0;
         bus_data_out  = 'b0;

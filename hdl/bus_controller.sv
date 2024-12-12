@@ -162,8 +162,8 @@ module bus_controller
     
     always_comb begin
         flush_out = 1'b0;
-        data_to_L2_out = 0;
-        tag_to_L2_out = 0;
+        data_to_L2_out = 'b0;
+        tag_to_L2_out = 'b0;
         
         if(flush_in1 || flush_in2) begin
             flush_out = 1'b1;

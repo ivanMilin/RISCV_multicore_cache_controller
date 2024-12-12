@@ -1,10 +1,9 @@
 clear -all
 
-#analyze -sv09  -f design.f -bbox_m InstructionMemory -bbox_a 
-analyze -sv09  -f design.f -bbox_m InstructionMemory  
+analyze -sv09 -f design_top.f -bbox_m InstructionMemory
 
 check_cov -init
-elaborate -top Top -bbox_a 32768
+elaborate -top top -bbox_a 58368
 
 clock clk -both_edges -factor 1 -phase 1
 reset -expression {reset}

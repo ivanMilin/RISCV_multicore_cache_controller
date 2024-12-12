@@ -143,8 +143,6 @@ module top
     (    
         .clk(clk),
         .reset(reset),
-        .wr_en(wr_en),
-        .rd_en(rd_en),
         .flush(flush_out),
         
         .opcode_in(opcode_from_bus),
@@ -177,12 +175,14 @@ module top
     );
     
     always_comb begin 
-    data_to_L2_s = 'b0;
-        if(/*req_core1 && grant_core1 && */flush_in1 == 1'b1) begin 
+    	data_to_L2_s = 'b0;
+    	tag_to_L2_s  = 'b0;
+        
+        if(flush_in1 && grant_core1) begin 
             data_to_L2_s = data_to_L2_1;
             tag_to_L2_s  = tag_to_L2_1;
         end 
-        else if(/*req_core2 && grant_core2 && */flush_in2 == 1'b1) begin 
+        else if(flush_in2 && grant_core2) begin 
             data_to_L2_s = data_to_L2_2;
             tag_to_L2_s  = tag_to_L2_2;
         end
