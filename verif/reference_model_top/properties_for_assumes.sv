@@ -81,26 +81,26 @@ endproperty
 // CHECK FOR THE NUMBER OF CYCLES 
 property assume_if_stall_not_null_load_from_cpu2_to_cpu1;
 	@(posedge clk) disable iff(reset)
-	//gb_stall1 == 1'b1 && top.cpu1.cache_hit_in == 2'b01 |-> $stable(top.cpu1.instruction)[*2];    //https://verificationacademy.com/forums/t/assertion-using-stable-with/37547/2
-	top.cpu1.controller_and_cache.state == 2'b01 |-> $stable(top.cpu1.instruction) s_until top.cpu1.controller_and_cache.state != 2'b01;
+	top.cpu1.controller_and_cache.stall == 1 || (top.cpu1.grant == 0 && top.cpu1.flush_out == 1) |-> 
+	$stable(top.cpu1.instruction)[*2];    //https://verificationacademy.com/forums/t/assertion-using-stable-with/37547/2
 endproperty
 
 property assume_if_stall_not_null_load_from_cpu2_to_cpu1_neg;
 	@(negedge clk) disable iff(reset)
-	//gb_stall1 == 1'b1 && top.cpu1.cache_hit_in == 2'b01 |-> $stable(top.cpu1.instruction)[*2];
-	top.cpu1.controller_and_cache.state == 2'b01 |-> $stable(top.cpu1.instruction) s_until top.cpu1.controller_and_cache.state != 2'b01;
+	top.cpu1.controller_and_cache.stall == 1 || (top.cpu1.grant == 0 && top.cpu1.flush_out == 1) |-> 
+	$stable(top.cpu1.instruction)[*2];
 endproperty
 
 property assume_if_stall_not_null_load_from_cpu1_to_cpu2;
 	@(posedge clk) disable iff(reset)
-	//gb_stall2== 1'b1 && top.cpu2.cache_hit_in == 2'b01 |-> $stable(top.cpu2.instruction)[*2];    //https://verificationacademy.com/forums/t/assertion-using-stable-with/37547/2
-	top.cpu2.controller_and_cache.state == 2'b01 |-> $stable(top.cpu2.instruction) s_until top.cpu2.controller_and_cache.state != 2'b01;
+	top.cpu2.controller_and_cache.stall == 1 || (top.cpu2.grant == 0 && top.cpu2.flush_out == 1)|-> 
+	$stable(top.cpu2.instruction)[*2];    //https://verificationacademy.com/forums/t/assertion-using-stable-with/37547/2
 endproperty
 
 property assume_if_stall_not_null_load_from_cpu1_to_cpu2_neg;
 	@(negedge clk) disable iff(reset)
-	//gb_stall2 == 1'b1 && top.cpu2.cache_hit_in == 2'b01 |-> $stable(top.cpu2.instruction)[*2];
-	top.cpu2.controller_and_cache.state == 2'b01 |-> $stable(top.cpu2.instruction) s_until top.cpu2.controller_and_cache.state != 2'b01;
+	top.cpu2.controller_and_cache.stall == 1 || (top.cpu2.grant == 0 && top.cpu2.flush_out == 1)|-> 
+	$stable(top.cpu2.instruction)[*2];
 endproperty
 //===============================================================================================================================================================================================================================
 property assume_funct3_S_type_opcode_cpu1;

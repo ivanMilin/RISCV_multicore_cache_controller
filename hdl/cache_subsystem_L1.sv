@@ -142,6 +142,7 @@ module cache_subsystem_L1
                 
                 if(cache_hit == 2'b10) begin
                     next_state = MAIN;
+                    //stall = 1'b0;
                 end else begin
                     next_state = WAIT_WRITE;
                 end

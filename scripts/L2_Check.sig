@@ -1,153 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wavelist version="3">
-  <insertion-point-position>30</insertion-point-position>
+  <insertion-point-position>19</insertion-point-position>
   <wave>
     <expr>clk</expr>
     <label/>
     <radix/>
   </wave>
   <wave>
-    <expr>&lt;embedded&gt;::top.chk_ref_model_top.assert_load_data_from_cpu2_to_cpu1</expr>
+    <expr>&lt;embedded&gt;::top.chk_ref_model_top.assert_flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>bus_ctrl.cache_hit_out1</expr>
+    <expr>cache_L2.bus_tag_in[23:1]</expr>
     <label/>
     <radix/>
   </wave>
   <wave>
-    <expr>chk_ref_model_top.clk</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.bus_address_in[7:2]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.cache_hit</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.index_in[7:2]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.cache_memory_L1[0].data</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.cache_memory_L1[0].mesi_state</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.cache_memory_L1[0].tag</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.cache_hit</expr>
+    <expr>cache_L2.flush</expr>
     <label/>
     <radix/>
   </wave>
   <wave>
-    <expr>cpu2.controller_and_cache.cache_hit_out</expr>
+    <expr>chk_ref_model_top.set_full</expr>
     <label/>
     <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model_top.set_full_index</expr>
+    <label/>
+    <radix>dec</radix>
   </wave>
   <wave>
-    <expr>bus_ctrl.req_core1</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave>
-    <expr>bus_ctrl.req_core2</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave>
-    <expr>bus_ctrl.grant_core1</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave>
-    <expr>bus_ctrl.grant_core2</expr>
+    <expr>cache_L2.hello</expr>
     <label/>
     <radix/>
   </wave>
   <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.bus_operation_in</expr>
+    <expr>cache_L2.set_index</expr>
     <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.bus_operation_out</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.bus_operation_in</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.bus_operation_out</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>opcode_out1</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.opcode_out</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.bus_address_in[7:2]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.bus_address_in[7:2]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu1.controller_and_cache.index_in[7:2]</expr>
-    <label/>
-    <radix/>
-  </wave>
-  <wave collapsed="true">
-    <expr>cpu2.controller_and_cache.index_in[7:2]</expr>
-    <label/>
-    <radix/>
+    <radix>dec</radix>
   </wave>
   <group collapsed="false">
-    <expr>cpu1.controller_and_cache.cache_memory_L1[0]</expr>
-    <label>cpu1.controller_and_cache.cache_memory_L1[0]</label>
-    <wave collapsed="true">
-      <expr>cpu1.controller_and_cache.cache_memory_L1[0].mesi_state</expr>
-      <label/>
-      <radix/>
-    </wave>
-    <wave collapsed="true">
-      <expr>cpu1.controller_and_cache.cache_memory_L1[0].tag</expr>
-      <label/>
-      <radix/>
-    </wave>
-    <wave collapsed="true">
-      <expr>cpu1.controller_and_cache.cache_memory_L1[0].data</expr>
-      <label/>
-      <radix/>
-    </wave>
+    <expr>cache_L2.cache_memory_L2[69]</expr>
+    <label>cache_L2.cache_memory_L2[69]</label>
+    <group collapsed="false">
+      <expr>cache_L2.cache_memory_L2[69][1]</expr>
+      <label>cache_L2.cache_memory_L2[69][1]</label>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[69][1].valid</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[69][1].lru</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[69][1].tag</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[69][1].data</expr>
+        <label/>
+        <radix/>
+      </wave>
+    </group>
+    <group collapsed="false">
+      <expr>cache_L2.cache_memory_L2[69][0]</expr>
+      <label>cache_L2.cache_memory_L2[69][0]</label>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[69][0].valid</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[69][0].lru</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[69][0].tag</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[69][0].data</expr>
+        <label/>
+        <radix/>
+      </wave>
+    </group>
   </group>
 </wavelist>

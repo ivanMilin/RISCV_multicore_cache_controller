@@ -47,7 +47,7 @@ module Processor #
     
     InstructionMemory #(.file_cpu(file_cpu)) im(.addr(index), .instruction(instruction));
 
-    RegisterFile rf (.clk(clk), .reset(reset), .reg_wr(reg_wr && !stall), .raddr1(instruction[19:15]), .raddr2(instruction[24:20]), .waddr(instruction[11:7]), .wdata(wdata_s), .rdata1(A_r), .rdata2(B_r));
+    RegisterFile rf (.clk(clk), .reset(reset), .reg_wr(reg_wr && stall == 0), .raddr1(instruction[19:15]), .raddr2(instruction[24:20]), .waddr(instruction[11:7]), .wdata(wdata_s), .rdata1(A_r), .rdata2(B_r));
     ImmediateGenerator ig (.clk(clk), .instruction(instruction), .imm_out(B_i));
 
     Mux2 select_A (.A(index), .B(A_r), .sel(sel_A), .C(A));

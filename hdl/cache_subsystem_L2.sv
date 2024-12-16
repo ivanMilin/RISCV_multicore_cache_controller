@@ -33,6 +33,7 @@ module cache_subsystem_L2(
     logic [8:0] set_index;  
     logic [22:0] tag;
     logic way0_hit, way1_hit;
+	logic [1:0]hello;
 
     typedef enum logic [1:0] {IDLE, DMEM_WRITE} state_t;
     state_t state, next_state;
@@ -98,6 +99,7 @@ module cache_subsystem_L2(
             data_to_dmem    <= 'b0;
             address_to_dmem <= 'b0;
             opcode_out      <= 'b0;
+			hello <= 'b0;
             for (integer i = 0; i < 512; i++) begin
                 for (integer j = 0; j < 2; j++) begin
                     cache_memory_L2[i][j].valid <= 0;
@@ -119,7 +121,7 @@ module cache_subsystem_L2(
                     cache_memory_L2[set_index][0].tag   <= bus_tag_in[23:1];//bus_address_in[31:9]; 
                end
                // Nulti je slobodan - Prvi je zauzet
-               else if(cache_memory_L2[set_index][0].valid == 0 && cache_memory_L2[set_index][1].valid) begin
+               /*else if(cache_memory_L2[set_index][0].valid == 0 && cache_memory_L2[set_index][1].valid) begin
                     if( cache_memory_L2[set_index][0].tag != bus_tag_in[23:1]) begin 
                         // Smesti na nutli
                         cache_memory_L2[set_index][0].valid <= 1;
@@ -139,7 +141,8 @@ module cache_subsystem_L2(
                         data_to_dmem <= cache_memory_L2[set_index][1].data;
                         opcode_out <= 7'b0100011; 
                     end                                    
-               end  
+               end 
+               */ 
                // Nulti je zauzet - Prvi je slobodan
                else if(cache_memory_L2[set_index][0].valid == 1 && cache_memory_L2[set_index][1].valid == 0) begin
                     if(cache_memory_L2[set_index][0].tag != bus_tag_in[23:1]) begin
@@ -166,6 +169,7 @@ module cache_subsystem_L2(
                // Oba su zauzeta 
                else if(cache_memory_L2[set_index][0].valid == 1 && cache_memory_L2[set_index][1].valid == 1) begin 
                     if(cache_memory_L2[set_index][0].tag == bus_tag_in[23:1]) begin
+						hello <= 1;
                         // Smesti na nulti i izbaci u DMEM
                         cache_memory_L2[set_index][0].data <= bus_data_in;
                         cache_memory_L2[set_index][0].lru  <= 0;
@@ -175,7 +179,8 @@ module cache_subsystem_L2(
                         data_to_dmem    <= cache_memory_L2[set_index][0].data;
                         opcode_out      <= 7'b0100011;
                     end
-                    else if(cache_memory_L2[set_index][1].tag == bus_tag_in[23:1]) begin 
+                    else if(cache_memory_L2[set_index][1].tag == bus_tag_in[23:1]) begin
+						hello <= 2; 
                         // Snesti na prvi i izbaci u DMEM
                         cache_memory_L2[set_index][1].data <= bus_data_in;
                         cache_memory_L2[set_index][1].lru  <= 0;
@@ -186,6 +191,7 @@ module cache_subsystem_L2(
                         opcode_out      <= 7'b0100011;
                     end
                     else if(cache_memory_L2[set_index][0].tag != bus_tag_in[23:1] && cache_memory_L2[set_index][1].tag != bus_tag_in[23:1]) begin
+						hello <= 3;
                         // LRU - Smesti na onaj ciji je LRU 1 i izbaci u DMEM
                         if(cache_memory_L2[set_index][0].lru == 1) begin
                             cache_memory_L2[set_index][0].data <= bus_data_in;

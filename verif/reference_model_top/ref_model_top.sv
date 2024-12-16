@@ -22,7 +22,14 @@ module ref_model_top
 	logic [31:0] gb_data_from_L1_cpu1_q_neg, gb_data_from_L1_cpu2_q_neg;
 	logic [31:0] gb_data_from_L2_1, gb_data_from_L2_2;
 	logic gb_stall1, gb_stall2;
-	
+	logic flush_ref1, flush_ref2, flush_ref3, flush_ref4, flush_ref5;
+	logic [8:0] past_index;
+	logic [31:0] past_tag_L2, past_data_L2;
+	logic set_full;
+	logic [8:0] set_full_index;	
+	logic [4:0] cnt;
+	logic [22:0]bus_tag_in_to_compare;
+	logic prev_flush_flag;
 	struct_instruction_R   struct_assignment_R1, struct_assignment_R2;
 	struct_instruction_I_L struct_assignment_I1, struct_assignment_I2;
 	struct_instruction_I_L struct_assignment_L1, struct_assignment_L2;
@@ -133,12 +140,140 @@ module ref_model_top
 		end
 	end
 	
+	logic [31:0] past_bus_data_in_pos;
+	logic [31:0] past_bus_data_in_neg;
+
 	always_ff @(posedge clk) begin
 		if(reset) begin
 			fvar_specific_addr_q <= 'b0;
+			past_bus_data_in_pos <= 'b0;
 		end 
 		else begin
 			fvar_specific_addr_q <= fvar_specific_addr;
+			past_bus_data_in_pos <= top.cache_L2.bus_data_in;
+		end
+	end
+	
+	always_ff @(posedge clk) begin
+		if(reset) begin
+			bus_tag_in_to_compare <= 'b0;
+		end 
+		else begin
+			if(top.cache_L2.cache_memory_L2[set_full_index][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[set_full_index][1].valid == 1'b1) begin 
+				//if(top.cache_L2.flush) begin
+					bus_tag_in_to_compare <= top.cache_L2.bus_tag_in[23:1];
+				//end 
+				//else begin
+				//	bus_tag_in_to_compare <= bus_tag_in_to_compare;
+				//end
+			end
+			else begin
+				bus_tag_in_to_compare <= bus_tag_in_to_compare;
+			end 
+		end
+	end
+
+	logic flush_way0_tag_match;
+	logic flush_way1_tag_match;
+	logic comb_flush_way0_tag_match;
+	logic comb_flush_way1_tag_match;
+
+	always_comb begin
+			comb_flush_way0_tag_match = 0;
+			comb_flush_way1_tag_match = 0;
+		if(flush_way0_tag_match && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag == top.cache_L2.bus_tag_in[23:1]) begin 
+			comb_flush_way0_tag_match = 1;
+		end
+		else if(flush_way1_tag_match && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].tag == top.cache_L2.bus_tag_in[23:1]) begin
+			comb_flush_way1_tag_match = 1;
+		end
+	end
+
+	always_ff @(negedge clk) begin
+		if(reset) begin
+			set_full <= 'b0; 
+			//set_full_index <= 'b0;
+			cnt <= 'b0;
+			flush_way0_tag_match <= 'b0;
+			flush_way1_tag_match <= 'b0;
+			past_bus_data_in_neg <= 'b0;
+		end else begin
+			if(top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].valid == 1'b1 && top.cache_L2.set_index == fvar_specific_addr[8:0]) begin 
+				set_full <= 1;
+				//set_full_index <= top.cache_L2.set_index;
+				//cnt <= cnt + 1;
+				past_bus_data_in_neg <= top.cache_L2.bus_data_in;
+					if(set_full && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag == top.cache_L2.bus_tag_in[23:1] && top.cache_L2.flush) begin
+						flush_way0_tag_match <= 1;
+						flush_way1_tag_match <= 0;
+					end
+					else if(set_full && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].tag == top.cache_L2.bus_tag_in[23:1] && top.cache_L2.flush) begin
+						flush_way0_tag_match <= 0;
+						flush_way1_tag_match <= 1;						 
+					end
+					else begin 
+						flush_way0_tag_match <= 0;
+						flush_way1_tag_match <= 0;
+					end
+		
+			end
+			else begin
+				set_full <= 'b0;
+			//	set_full_index <= set_full_index;
+				cnt <= cnt;
+				flush_way0_tag_match <= 0;
+				flush_way1_tag_match <= 0;
+			end 
+		end
+	end
+
+
+	always_ff @(negedge clk) begin
+		if(reset) begin
+			flush_ref1   <= 1'b0;
+			flush_ref2   <= 1'b0;
+			flush_ref3   <= 1'b0;
+			past_index   <= 'b0;
+			past_data_L2 <= 'b0;
+			past_tag_L2  <= 'b0;
+		end
+		if(top.cache_L2.flush == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].valid == 1'b0) begin
+			if(top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].tag != top.cache_L2.bus_tag_in[23:1]) begin
+				flush_ref1   <= 1'b1;
+				flush_ref2   <= 1'b0;
+				flush_ref3   <= 1'b0;
+				past_index   <= top.cache_L2.set_index;
+				past_data_L2 <= top.cache_L2.bus_data_in;
+				past_tag_L2  <= top.cache_L2.bus_tag_in[23:1];
+			end
+			else begin
+				flush_ref1   <= 1'b0;
+				flush_ref2   <= 1'b1;
+				flush_ref3   <= 1'b0;
+				past_index   <= top.cache_L2.set_index;
+				past_data_L2 <= top.cache_L2.bus_data_in;
+				past_tag_L2  <= top.cache_L2.bus_tag_in[23:1];
+			end
+		end
+		else if(top.cache_L2.flush == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].valid == 1'b1) begin
+			if(top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].tag == top.cache_L2.bus_tag_in[23:1]) begin
+				flush_ref1   <= 1'b0;
+				flush_ref2   <= 1'b0;
+				flush_ref3   <= 1'b1;
+				past_index   <= top.cache_L2.set_index;
+				past_data_L2 <= top.cache_L2.bus_data_in;
+				past_tag_L2  <= top.cache_L2.bus_tag_in[23:1];
+			end
+			else begin
+			end
+		end
+		else begin
+			flush_ref1 <= 1'b0;
+			flush_ref2 <= 1'b0;
+			flush_ref3 <= 1'b0;
+			past_index <= 'b0;
+			past_data_L2 <= 'b0;
+			past_tag_L2  <= past_tag_L2;
 		end
 	end
 	// =============== PROPERTIES SECTION ================ 
@@ -249,6 +384,16 @@ module ref_model_top
 		top.cpu2.controller_and_cache.cache_memory_L1[$past(top.cpu2.controller_and_cache.index_in[7:2])].mesi_state == 2'b10;
 	endproperty
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	property load_word_from_cache_to_rf_on_miss_cpu1;
+		top.cpu1.controller_and_cache.state == 2'b01 && top.cpu1.instruction[14:12] == 3'b010 && top.cpu1.stall == 1 ##1 top.cpu1.stall == 0 |->
+		top.cpu1.controller_and_cache.cache_memory_L1[$past(top.cpu1.controller_and_cache.index_in[7:2])].data == top.cpu1.rf.registerfile[$past(top.cpu1.instruction[11:7])];		
+	endproperty
+	
+	property load_word_from_cache_to_rf_on_miss_cpu2;
+		top.cpu2.controller_and_cache.state == 2'b01 && top.cpu2.instruction[14:12] == 3'b010 && top.cpu2.stall == 1 ##1 top.cpu2.stall == 0 |->
+		top.cpu2.controller_and_cache.cache_memory_L1[$past(top.cpu2.controller_and_cache.index_in[7:2])].data == top.cpu2.rf.registerfile[$past(top.cpu2.instruction[11:7])];		
+	endproperty
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	property load_word_from_L2_to_cpu1_way0_hit;
 		top.opcode_out1 == 7'b0000011 && top.bus_ctrl.cache_hit_out1 == 2'b10 && top.cpu1.controller_and_cache.mask_in == 3'b010 && top.cache_L2.way0_hit &&
 		top.cpu1.controller_and_cache.cache_hit == 2'b01 ##1 top.cpu1.controller_and_cache.cache_hit == 2'b10|-> 
@@ -273,6 +418,7 @@ module ref_model_top
 		top.cpu2.controller_and_cache.cache_memory_L1[$past(top.cpu2.controller_and_cache.index_in[7:2])].data == gb_data_from_L2_2;
 	endproperty
 	//==================================================================================================================================================================================
+	// WHEN FLUSH HAPPENS CHECK DOES DATA IS STORED CORRECTLY IN L2-CACHE
 	property flushing_data_to_L2_both_ways_free; 
 		top.cache_L2.flush == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].valid == 0 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].valid == 0 |=>
 		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].valid == 1 &&
@@ -281,9 +427,82 @@ module ref_model_top
 		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].data  == $past(top.cache_L2.bus_data_in) &&
 		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].tag   == $past(top.cache_L2.bus_tag_in[23:1]); 
 	endproperty
-	// ===================== ASSERTIONS SECTION ====================== 
 	
-	// --------- BUS CONTROLLER - ASSERTS ---------
+	property flushing_data_to_L2_second_available_first_not_tag_missmatch;
+		flush_ref1 |->
+		top.cache_L2.cache_memory_L2[past_index][1].valid == 1 &&
+                top.cache_L2.cache_memory_L2[past_index][1].lru   == 0 && 
+                top.cache_L2.cache_memory_L2[past_index][0].lru   == 1 &&   
+                top.cache_L2.cache_memory_L2[past_index][1].data  == past_data_L2 &&
+                top.cache_L2.cache_memory_L2[past_index][1].tag   == past_tag_L2; 
+	endproperty
+	
+	property flushing_data_to_L2_second_available_first_not_tag_match;
+		flush_ref2 |->
+		top.cache_L2.cache_memory_L2[past_index][0].valid == 1 &&
+                top.cache_L2.cache_memory_L2[past_index][0].lru   == 0 && 
+                top.cache_L2.cache_memory_L2[past_index][1].lru   == 1 &&   
+                top.cache_L2.cache_memory_L2[past_index][0].data  == past_data_L2 &&
+                top.cache_L2.cache_memory_L2[past_index][0].tag   == past_tag_L2; 
+	endproperty
+	
+	/*	
+	property flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match;
+		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].valid == 1'b1 ##1 top.cache_L2.flush == 1'b1 &&
+		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].tag == top.cache_L2.bus_tag_in[23:1] |=>
+                top.cache_L2.cache_memory_L2[past_index][0].lru   == 0 && 
+                top.cache_L2.cache_memory_L2[past_index][1].lru   == 1;// &&   
+                //top.cache_L2.cache_memory_L2[past_index][0].data  == past_data_L2;
+	endproperty
+	*/
+
+	// Pokusati gadjati neki until - dok se opet ne pojavi set_full na posegde-u -- !!! JEBENI SKEW !!!
+	/*property flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match;
+		cnt == 1 && top.cache_L2.flush == 1'b1 && top.cache_L2.cache_memory_L2[set_full_index][1].tag == top.cache_L2.bus_tag_in[23:1] && top.cache_L2.cache_hit_out != 2'b01 |-> 
+		(!(cnt == 2) [*] ##1 (cnt == 2)) |->
+		top.cache_L2.cache_memory_L2[set_full_index][0].lru   == 1 && 
+	  	top.cache_L2.cache_memory_L2[set_full_index][1].lru   == 0;// &&   
+		//top.cache_L2.cache_memory_L2[past_index][0].data  == past_data_L2;
+	endproperty
+	*/	
+
+	/*
+	property flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match;
+		cnt == 1 && top.cache_L2.flush == 1'b1 && top.cache_L2.cache_memory_L2[set_full_index][1].tag == top.cache_L2.bus_tag_in[23:1] && top.cache_L2.state == 2'b00 && fvar_specific_addr == top.cache_L2.set_index ##1 top.cache_L2.flush == 1'b0 |-> 
+		top.cache_L2.cache_memory_L2[set_full_index][0].lru   == 1 && 
+	  	top.cache_L2.cache_memory_L2[set_full_index][1].lru   == 0;// &&   
+		//top.cache_L2.cache_memory_L2[past_index][0].data  == past_data_L2;
+	endproperty
+	*/
+
+	/*
+	property flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match;
+		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].valid == 1'b1 && 
+		fvar_specific_addr == top.cache_L2.set_index && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].tag == top.cache_L2.bus_tag_in[23:1] && $rose(top.cache_L2.flush) && top.cache_L2.state == 2'b00 |=> 
+		top.cache_L2.cache_memory_L2[fvar_specific_addr][0].lru   == 1 && 
+	  	top.cache_L2.cache_memory_L2[fvar_specific_addr][1].lru   == 0;// &&   
+		//top.cache_L2.cache_memory_L2[past_index][0].data  == past_data_L2;
+	endproperty
+	*/
+
+	property flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match;
+		comb_flush_way0_tag_match |-> 
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 0 && 
+	  	top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].lru   == 1 &&   
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].data  == past_bus_data_in_neg;
+	endproperty
+
+	property flushing_data_to_L2_when_both_lines_are_not_free_way1_tag_match;
+		comb_flush_way1_tag_match |-> 
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].lru   == 0 && 
+	  	top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 1 &&   
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].data  == past_bus_data_in_neg;
+	endproperty
+	
+	
+
+	// ===================== ASSERTIONS SECTION ======================
+	// --------- BUS CONTROLLER ---------
 	//ASSERT PASSED//assert_check_toggle_when_both_req_grant2 : assert property (@(posedge clk) check_toggle_when_both_req_grant2);
 	//ASSERT PASSED//assert_check_toggle_when_both_req_grant1 : assert property (@(posedge clk) check_toggle_when_both_req_grant1);
 	//ASSERT PASSED//assert_chech_when_reqs_are_not_high      : assert property (@(posedge clk) chech_when_reqs_are_not_high);
@@ -296,24 +515,38 @@ module ref_model_top
 	//ASSERT PASSED//assert_forwaring_data_when_flush_happens : assert property (@(posedge clk) forwaring_data_when_flush_happens);
 	//ASSERT PASSED//assert_not_forwaring_data_when_flush_doesnt_happens : assert property (@(posedge clk) not_forwaring_data_when_flush_doesnt_happens);
 	
-	// --------- L2 CACHE CONTROLLER AND L2 MEMORY - ASSERTS ---------
+	// --------- L2 CACHE CONTROLLER AND L2 MEMORY ---------
 	//ASSERT PASSED//assert_checking_transition_from_IDLE_to_DMEM_WRITE : assert property (@(posedge clk) checking_transition_from_IDLE_to_DMEM_WRITE);
 	//ASSERT PASSED//assert_checking_transition_from_DMEM_WRITE_to_IDLE : assert property (@(posedge clk) checking_transition_from_DMEM_WRITE_to_IDLE);
+	
+	// --------- CHECKING DOES HIT HAPPENS IN BOTH WAYS ---------
 	//ASSERT PASSED//assert_checking_way0_hit : assert property (@(posedge clk) checking_way0_hit);
 	//ASSERT PASSED//assert_checking_way1_hit : assert property (@(posedge clk) checking_way1_hit);
 	
+	// --------- LOADING DATA FROM ONE CPU TO ANOTHER  ---------
 	//ASSERT PASSED//assert_load_word_from_cpu2_to_cpu1 : assert property (@(posedge clk) load_word_from_cpu2_to_cpu1);
 	//ASSERT PASSED//assert_load_word_from_cpu1_to_cpu2 : assert property (@(posedge clk) load_word_from_cpu1_to_cpu2);
 	
+	// --------- LOADING DATA FROM L2 FROM BOTH WAYS IN BOTH CPUs ---------
 	//ASSERT PASSED//assert_load_word_from_L2_to_cpu1_way0_hit : assert property (@(posedge clk) load_word_from_L2_to_cpu1_way0_hit);
 	//ASSERT PASSED//assert_load_word_from_L2_to_cpu1_way1_hit : assert property (@(posedge clk) load_word_from_L2_to_cpu1_way1_hit);
 	
 	//ASSERT PASSED//assert_load_word_from_L2_to_cpu2_way0_hit : assert property (@(posedge clk) load_word_from_L2_to_cpu2_way0_hit);
 	//ASSERT PASSED//assert_load_word_from_L2_to_cpu2_way1_hit : assert property (@(posedge clk) load_word_from_L2_to_cpu2_way1_hit);
 	
-	assert_flushing_data_to_L2_both_ways_free : assert property (@(negedge clk) flushing_data_to_L2_both_ways_free);
+	// --------- LOADING DATA FROM L1 TO RF WHEN MISS HAPPENS --------- 
+	//ASSERT PASSED//assert_load_word_from_cache_to_rf_on_miss_cpu1 : assert property (@(posedge clk) load_word_from_cache_to_rf_on_miss_cpu1);
+	//ASSERT PASSED//assert_load_word_from_cache_to_rf_on_miss_cpu2 : assert property (@(posedge clk) load_word_from_cache_to_rf_on_miss_cpu2);
 	
-	
-	cover_bus_hit : cover property (@(negedge clk) top.opcode_out1 == 7'b0000011 && top.bus_ctrl.cache_hit_out1 == 2'b01 && top.cpu1.controller_and_cache.mask_in == 3'b010 && top.cpu1.controller_and_cache.cache_hit == 2'b01 ##1 
-	top.cpu1.controller_and_cache.cache_hit == 2'b10 && top.cpu1.stall_out == 1'b0);
+	// --------- FLUSHING DATA FROM CPUs TO L2
+	//ASSERT PASSED//assert_flushing_data_to_L2_both_ways_free : assert property (@(negedge clk) flushing_data_to_L2_both_ways_free);
+	//ASSERT PASSED//assert_flushing_data_to_L2_second_available_first_not_tag_missmatch : assert property (@(posedge clk) flushing_data_to_L2_second_available_first_not_tag_missmatch);
+	//ASSERT PASSED//assert_flushing_data_to_L2_second_available_first_not_tag_match : assert property (@(posedge clk) flushing_data_to_L2_second_available_first_not_tag_match);
+	//ASSERT PASSED//assert_flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match : assert property (@(posedge clk) flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match);
+	//COVER PASSED//cover_flush_way0_tag_match : cover property (@(negedge clk) flush_way0_tag_match == 1);
+	//COVER PASSED//cover_comb_flush_way0_tag_match : cover property (@(negedge clk) comb_flush_way0_tag_match == 1);	
+	//ASSERT PASSED//assert_flushing_data_to_L2_when_both_lines_are_not_free_way1_tag_match : assert property (@(posedge clk) flushing_data_to_L2_when_both_lines_are_not_free_way1_tag_match);
+
+	//cover_bus_hit : cover property (@(negedge clk) top.opcode_out1 == 7'b0000011 && top.bus_ctrl.cache_hit_out1 == 2'b01 && top.cpu1.controller_and_cache.mask_in == 3'b010 && top.cpu1.controller_and_cache.cache_hit == 2'b01 ##1 
+	//top.cpu1.controller_and_cache.cache_hit == 2'b10 && top.cpu1.stall_out == 1'b0);
 endmodule
