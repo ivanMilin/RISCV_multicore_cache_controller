@@ -96,16 +96,16 @@ module cache_subsystem_L2(
     end
 
 
-	always_comb begin
-		address_to_dmem = bus_address_in[31:2];		
+    always_comb begin
+	address_to_dmem = bus_address_in[31:2];		
 
-		if(flush) begin
-			address_to_dmem = address_to_dmem_s; 
-		end 
-		else begin
-			address_to_dmem = bus_address_in[31:2]; 
-		end
+	if(opcode_out == 7'b0100011) begin
+	    address_to_dmem = address_to_dmem_s; 
+	end 
+        else begin
+	    address_to_dmem = bus_address_in[31:2]; 
 	end
+    end
 
     always_ff @(negedge clk) begin
         if (reset) begin
