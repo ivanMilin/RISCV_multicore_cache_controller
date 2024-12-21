@@ -26,14 +26,9 @@ module ref_model_top
 	logic [8:0] past_index;
 	logic [31:0] past_tag_L2, past_data_L2;
 	logic set_full;
-	logic [8:0] set_full_index;	
-	logic [4:0] cnt;
-	logic [22:0]bus_tag_in_to_compare;
-	logic prev_flush_flag;
 	logic [1:0] gb_cache_hit_out_pos, gb_cache_hit_out_neg;
 	
 	logic [31:0] address_on_miss;
-	logic [31:0] past_data, past_tag;
 	
 	struct_instruction_R   struct_assignment_R1, struct_assignment_R2;
 	struct_instruction_I_L struct_assignment_I1, struct_assignment_I2;
@@ -111,7 +106,6 @@ module ref_model_top
 	assign gb_stall1 = top.cpu1.stall;
 	assign gb_stall2 = top.cpu2.stall;
 	
-	//assign gb_address_to_dmem = {top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].tag, top.cache_L2.set_index};
 	
 	always_ff @(negedge clk) begin
 		if(reset) begin
@@ -154,28 +148,12 @@ module ref_model_top
 	always_ff @(posedge clk) begin
 		if(reset) begin
 			fvar_specific_addr_q <= 'b0;
-			past_bus_data_in_pos <= 'b0;
 		end 
 		else begin
-			fvar_specific_addr_q <= fvar_specific_addr;
-			past_bus_data_in_pos <= top.cache_L2.bus_data_in;
-			
+			fvar_specific_addr_q <= fvar_specific_addr;	
 		end
 	end
 	
-	always_ff @(posedge clk) begin
-		if(reset) begin
-			bus_tag_in_to_compare <= 'b0;
-		end 
-		else begin
-			if(top.cache_L2.cache_memory_L2[set_full_index][0].valid == 1'b1 && top.cache_L2.cache_memory_L2[set_full_index][1].valid == 1'b1) begin 
-				bus_tag_in_to_compare <= top.cache_L2.bus_tag_in[23:1];
-			end
-			else begin
-				bus_tag_in_to_compare <= bus_tag_in_to_compare;
-			end 
-		end
-	end
 
 	logic flush_way0_tag_match;
 	logic flush_way1_tag_match;
@@ -231,8 +209,7 @@ module ref_model_top
 						flush_tag_missmatch_way0_lru <= 0;
 						flush_tag_missmatch_way1_lru <= 0;					 
 					end
-					else if(set_full && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag != top.cache_L2.bus_tag_in[23:1] && 
-						top.cache_L2.flush && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].tag != top.cache_L2.bus_tag_in[23:1] && top.cache_L2.flush) begin
+					else if(set_full && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag != top.cache_L2.bus_tag_in[23:1] && top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].tag != top.cache_L2.bus_tag_in[23:1] && top.cache_L2.flush) begin
 						if(top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru) begin
 							flush_way0_tag_match <= 0;
 							flush_way1_tag_match <= 0;
@@ -256,7 +233,7 @@ module ref_model_top
 					else begin 
 						flush_way0_tag_match <= 0;
 						flush_way1_tag_match <= 0;
-						flush_tag_missmatch_way0_lru <= 'b0;
+						flush_tag_missmatch_way0_lru <= 0;
 						flush_tag_missmatch_way1_lru <= 0;
 					end
 		
@@ -265,8 +242,29 @@ module ref_model_top
 				set_full <= 'b0;
 				flush_way0_tag_match <= 0;
 				flush_way1_tag_match <= 0;
+				flush_tag_missmatch_way0_lru <= 0;
+				flush_tag_missmatch_way1_lru <= 0;
 			end 
 		end
+	end
+
+	logic [31:0] flopped_lru_data;
+	logic [22:0] flopped_lru_tag;
+	always_ff @(negedge clk) begin
+		if(reset) begin 
+			flopped_lru_data <= 'b0;
+			flopped_lru_tag  <= 'b0;
+		end
+		else begin 
+			if(set_full) begin
+		    	flopped_lru_data <= top.cache_L2.bus_data_in;
+				flopped_lru_tag  <= top.cache_L2.bus_tag_in[23:1]; 
+			end
+			else begin 
+				flopped_lru_data <= flopped_lru_data;
+				flopped_lru_tag  <= flopped_lru_tag;
+			end
+		end 
 	end
 
 
@@ -318,20 +316,31 @@ module ref_model_top
 		end
 	end
 	
+
+	logic [31:0] flopped_dmem_data_lru0,flopped_dmem_data_lru1;
+	logic [22:0] flopped_dmem_tag_lru0, flopped_dmem_tag_lru1;
 	always_ff @(negedge clk) begin
 		if(reset) begin
-			past_data <= 'b0;
-			past_tag  <= 'b0;
+			flopped_dmem_data_lru0 <= 'b0;
+			flopped_dmem_tag_lru0  <= 'b0;
+			flopped_dmem_data_lru1 <= 'b0;
+			flopped_dmem_tag_lru1  <= 'b0;
 		end
 		else begin
-			if(top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 0 &&
-			   top.cache_L2.state == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0) begin
-				past_tag  <= top.cache_L2.tag;
-				past_data <= top.cache_L2.data_from_dmem;
-			end	
+			if(top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 0 && top.cache_L2.state == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0) begin
+				flopped_dmem_data_lru0 <= top.dmem.data_from_dmem;
+				flopped_dmem_tag_lru0  <= top.cache_L2.tag;  
+			end
+			else if(top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 0 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 1 && top.cache_L2.state == 2'b01 && 
+					top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0) begin
+				flopped_dmem_data_lru1 <= top.dmem.data_from_dmem;
+				flopped_dmem_tag_lru1  <= top.cache_L2.tag;
+			end
 			else begin
-				past_tag  <= past_tag;
-				past_data <= past_data;
+				flopped_dmem_data_lru0 <= flopped_dmem_data_lru0;
+				flopped_dmem_tag_lru0  <= flopped_dmem_tag_lru0; 
+				flopped_dmem_data_lru1 <= flopped_dmem_data_lru1;
+				flopped_dmem_tag_lru1  <= flopped_dmem_tag_lru1;
 			end
 		end
 	end
@@ -522,20 +531,22 @@ module ref_model_top
 	property flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way0_lru;
 		comb_flush_tag_missmatch_way0_lru && top.cache_L2.state == 2'b00 |->
 		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].lru   == 1 && 
-	  	top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 0;// &&   
-		//top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].data  == past_bus_data_in_neg;
+	  	top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 0 &&   
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].data  == flopped_lru_data && 
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag   == flopped_lru_tag;
 	endproperty
 	
 	property flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way1_lru;
 		comb_flush_tag_missmatch_way1_lru && top.cache_L2.state == 2'b00 |->
 		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].lru   == 0 && 
-	  	top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 1;// &&   
-		//top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].data  == past_bus_data_in_neg;
+	  	top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 1 && 
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].data  == flopped_lru_data && 
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].tag   == flopped_lru_tag;
 	endproperty
 	
 	property checking_address_on_MISS;
 		top.cache_L2.cache_hit_out == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.state == 2'b00 && top.cache_L2.flush == 0 |=> 
-		top.cache_L2.address_to_dmem == $past(top.cache_L2.bus_address_in);//{top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag, fvar_specific_addr[8:0]};
+		top.cache_L2.address_to_dmem == $past(top.cache_L2.bus_address_in);
 	endproperty
 	
 	property loading_data_from_DMEM_to_L2_both_lru_zero;
@@ -552,15 +563,25 @@ module ref_model_top
 	property loading_data_from_DMEM_to_L2_both_lru0;
 		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 1 && 
 		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 0 &&
-		top.cache_L2.state == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0 ##1 top.cache_L2.cache_hit_out == 2'b10 && top.cache_L2.flush == 0|->
-		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].valid == 1 &&
-		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].tag   == past_tag  &&
-		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].data  == past_data &&
-		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][0].lru   == 0  &&
-		top.cache_L2.cache_memory_L2[$past(top.cache_L2.set_index)][1].lru   == 1;
+		top.cache_L2.state == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0 |=>
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].valid == 1 &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].tag   == flopped_dmem_tag_lru0  &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].data  == flopped_dmem_data_lru0 &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 0  &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].lru   == 1;
 	endproperty
 
-	
+	property loading_data_from_DMEM_to_L2_both_lru1;
+		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 0 && 
+		top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 1 &&
+		top.cache_L2.state == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0 |=>
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].valid == 1 &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].tag   == flopped_dmem_tag_lru1  &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].data  == flopped_dmem_data_lru1 &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][1].lru   == 0  &&
+		top.cache_L2.cache_memory_L2[fvar_specific_addr[8:0]][0].lru   == 1;
+	endproperty
+
 	// ===================== ASSERTIONS SECTION ======================
 	// --------- BUS CONTROLLER ---------
 	//ASSERT PASSED//assert_check_toggle_when_both_req_grant2 : assert property (@(posedge clk) check_toggle_when_both_req_grant2);
@@ -604,14 +625,25 @@ module ref_model_top
 	//ASSERT PASSED//assert_flushing_data_to_L2_second_available_first_not_tag_match : assert property (@(posedge clk) flushing_data_to_L2_second_available_first_not_tag_match);
 	//ASSERT PASSED//assert_flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match : assert property (@(posedge clk) flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match);
 	//ASSERT PASSED//assert_flushing_data_to_L2_when_both_lines_are_not_free_way1_tag_match : assert property (@(posedge clk) flushing_data_to_L2_when_both_lines_are_not_free_way1_tag_match);
-	//assert_flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way0_lru : assert property (@(posedge clk) flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way0_lru); //takes time to prove
-	//assert_flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way1_lru : assert property (@(posedge clk) flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way1_lru);
+	//ASSERT PASSED//assert_flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way0_lru : assert property (@(negedge clk) flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way0_lru);
+	//ASSERT PASSED//assert_flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way1_lru : assert property (@(negedge clk) flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way1_lru);
 	
 	//---------- LOAD MISS IN L2 - LOADING DATA FROM DMEM
 	//ASSERT PASSED//assert_checking_address_on_MISS : assert property (@(negedge clk) checking_address_on_MISS);
 	//ASSERT PASSED//assert_loading_data_from_DMEM_to_L2_both_lru_zero : assert property (@(negedge clk) loading_data_from_DMEM_to_L2_both_lru_zero);
-	assert_loading_data_from_DMEM_to_L2_both_lru0 : assert property (@(posedge clk) loading_data_from_DMEM_to_L2_both_lru0);
+	//ASSERT PASSED//assert_loading_data_from_DMEM_to_L2_both_lru0 : assert property (@(negedge clk) loading_data_from_DMEM_to_L2_both_lru0);
+	//ASSERT PASSED//assert_loading_data_from_DMEM_to_L2_both_lru1 : assert property (@(negedge clk) loading_data_from_DMEM_to_L2_both_lru1);
 	
+
+	//cover_help : cover property (@(negedge clk) top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 1 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 0 &&
+	//											top.cache_L2.state == 2'b01 && top.cache_L2.set_index == fvar_specific_addr[8:0] && top.cache_L2.flush == 0);
+
+	//cover_flush_cache_hit_neg : cover property(@(negedge clk) top.cache_L2.opcode_in == 7'b0000011 && top.cache_L2.flush == 0 && top.cache_L2.cache_hit_out == 2'b01 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 1 &&
+												   //top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 0 ##1 top.cache_L2.cache_hit_out == 2'b10);
+
+	//cover_flush_cache_hit_pos : cover property(@(posedge clk) top.cache_L2.opcode_in == 7'b0000011 && top.cache_L2.flush == 0 && top.cache_L2.cache_hit_out == 2'b01 && top.cache_L2.cache_memory_L2[top.cache_L2.set_index][0].lru == 1 &&
+		//										   top.cache_L2.cache_memory_L2[top.cache_L2.set_index][1].lru == 0 ##1 top.cache_L2.cache_hit_out == 2'b10);
+
 	//COVER PASSED//cover_flush_way0_tag_match : cover property (@(negedge clk) flush_way0_tag_match == 1);
 	//COVER PASSED//cover_comb_flush_way0_tag_match : cover property (@(negedge clk) comb_flush_way0_tag_match == 1);	
 	//cover_flushing_data_to_L2_when_both_lines_are_not_free_tag_missmatch_way0_lru : cover property (@(negedge clk) comb_flush_tag_missmatch_way0_lru == 1);
