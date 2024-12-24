@@ -92,7 +92,7 @@ module cache_subsystem_L1
         req_core   = 1'b0;
         opcode_out = opcode_in[6:0];
         
-        if((opcode_in[6:0] == 7'b0000011 && cache_hit == 2'b01) || (opcode_in[6:0] == 7'b0100011 && cache_memory_L1[index_in[7:2]].mesi_state == 2'b00) || (opcode_in[6:0] == 7'b0100011 && cache_memory_L1[index_in[7:2]].mesi_state == 2'b10)) begin
+        if((opcode_in[6:0] == 7'b0000011) || (opcode_in[6:0] == 7'b0100011 && cache_memory_L1[index_in[7:2]].mesi_state == 2'b00) || (opcode_in[6:0] == 7'b0100011 && cache_memory_L1[index_in[7:2]].mesi_state == 2'b10)) begin
            req_core = 1'b1;
         end
     end 

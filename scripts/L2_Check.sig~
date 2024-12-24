@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wavelist version="3">
+  <insertion-point-position>20</insertion-point-position>
+  <wave>
+    <expr>clk</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave>
+    <expr>&lt;embedded&gt;::top.chk_ref_model_top.assert_flushing_data_to_L2_when_both_lines_are_not_free_way0_tag_match</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>cache_L2.bus_tag_in[23:1]</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave>
+    <expr>cache_L2.flush</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>cache_L2.set_index</expr>
+    <label/>
+    <radix>dec</radix>
+  </wave>
+  <wave collapsed="true">
+    <expr>cache_L2.state</expr>
+    <label/>
+    <radix>cache_L2.state</radix>
+  </wave>
+  <wave collapsed="true">
+    <expr>chk_ref_model_top.past_index</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <group collapsed="false">
+    <expr>cache_L2.cache_memory_L2[0]</expr>
+    <label>cache_L2.cache_memory_L2[0]</label>
+    <group collapsed="false">
+      <expr>cache_L2.cache_memory_L2[0][1]</expr>
+      <label>cache_L2.cache_memory_L2[0][1]</label>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[0][1].valid</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[0][1].lru</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[0][1].tag</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[0][1].data</expr>
+        <label/>
+        <radix/>
+      </wave>
+    </group>
+    <group collapsed="false">
+      <expr>cache_L2.cache_memory_L2[0][0]</expr>
+      <label>cache_L2.cache_memory_L2[0][0]</label>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[0][0].valid</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave>
+        <expr>cache_L2.cache_memory_L2[0][0].lru</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[0][0].tag</expr>
+        <label/>
+        <radix/>
+      </wave>
+      <wave collapsed="true">
+        <expr>cache_L2.cache_memory_L2[0][0].data</expr>
+        <label/>
+        <radix/>
+      </wave>
+    </group>
+  </group>
+  <wave collapsed="true">
+    <expr>cache_L2.address_to_dmem</expr>
+    <label/>
+    <radix/>
+  </wave>
+  <wave collapsed="true">
+    <expr>cache_L2.data_to_dmem</expr>
+    <label/>
+    <radix/>
+  </wave>
+</wavelist>
