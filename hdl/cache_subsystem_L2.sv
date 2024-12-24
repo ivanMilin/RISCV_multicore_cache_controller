@@ -152,7 +152,7 @@ module cache_subsystem_L2(
                         cache_memory_L2[set_index][0].data  <= bus_data_in;
                         cache_memory_L2[set_index][0].tag   <= bus_tag_in[23:1];
                         
-                        address_to_dmem_s <= {cache_memory_L2[set_index][1].tag, set_index};
+                        address_to_dmem_s <= {cache_memory_L2[set_index][0].tag, set_index};
                         data_to_dmem    <= cache_memory_L2[set_index][0].data;
                         opcode_out      <= 7'b0100011; 
                     end
