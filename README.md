@@ -7,8 +7,8 @@
 - Project created in collaboration with the company Veriest Venture Serbian, mentor Tivadar Mako
 
 ## System overview :
+<img width="805" height="490" alt="image" src="https://github.com/user-attachments/assets/0ec70de4-2ba8-460b-a5d6-9e5637c1aa3a" />
 
-![top_module](https://github.com/user-attachments/assets/797874b8-bdf8-472e-bbbd-0521b15bd7ab)
 
 ## Implemented instructions :
 <img width="849" height="790" alt="implementirane_instrukcije" src="https://github.com/user-attachments/assets/f2bcc9da-621c-489f-aa74-5293dea0017f" />
